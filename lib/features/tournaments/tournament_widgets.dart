@@ -46,6 +46,15 @@ class TournamentStatusChip extends StatelessWidget {
           colors.warning,
           context.l10n.tournamentStatusCheckIn,
         ),
+      // The fast-start deployment's last phase: the roster is sealed and a
+      // short clock is running. A daily tournament never reaches it, but a
+      // client must render whatever the server sends — and "starting soon" is
+      // what this state is, so it borrows that label rather than inventing a
+      // seventh chip nobody has designed.
+      AutoTournamentStatus.starting => (
+          colors.info,
+          context.l10n.tournamentStatusUpcoming,
+        ),
       AutoTournamentStatus.running => (
           colors.info,
           context.l10n.tournamentStatusRunning,

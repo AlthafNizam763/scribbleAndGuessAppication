@@ -99,6 +99,18 @@ NotificationLook lookFor(NotificationKind kind) {
       return NotificationLook(
         icon: Icons.flag_outlined,
         tint: (SketchColors colors) => colors.accentRed,
+        route: AppRoutes.tournaments,
+      );
+
+    case NotificationKind.tournamentCheckInOpen:
+      // The listing rather than the specific tournament, because this table
+      // maps a *kind* to a destination and has no row to read an id from. The
+      // push path, which does have the id, pushes the detail screen on top —
+      // see `app/push_navigation.dart`.
+      return NotificationLook(
+        icon: Icons.how_to_reg_outlined,
+        tint: (SketchColors colors) => colors.accentGreen,
+        route: AppRoutes.tournaments,
       );
 
     case NotificationKind.systemAnnouncement:

@@ -1374,6 +1374,12 @@ mixin GeneratedText {
   /// See `AppStrings.tournamentNoneRunningHint`.
   String get tournamentNoneRunningHint => lookUp('tournamentNoneRunningHint');
 
+  /// See `AppStrings.tournamentNoneToday`.
+  String get tournamentNoneToday => lookUp('tournamentNoneToday');
+
+  /// See `AppStrings.tournamentNoneTodayHint`.
+  String get tournamentNoneTodayHint => lookUp('tournamentNoneTodayHint');
+
   /// See `AppStrings.tournamentSlot`.
   String get tournamentSlot => lookUp('tournamentSlot');
 
@@ -1475,4 +1481,31 @@ mixin GeneratedText {
 
   /// See `AppStrings.tournamentCancelledBecause`.
   String get tournamentCancelledBecause => lookUp('tournamentCancelledBecause');
+
+  /// See `AppStrings.tournamentJoiningOpensIn`.
+  String get tournamentJoiningOpensIn => lookUp('tournamentJoiningOpensIn');
+
+  /// See `AppStrings.tournamentStartsIn`.
+  String get tournamentStartsIn => lookUp('tournamentStartsIn');
+
+  /// See `AppStrings.tournamentCheckInOpen`.
+  String get tournamentCheckInOpen => lookUp('tournamentCheckInOpen');
+
+  /// See `AppStrings.tournamentCancelRegistration`.
+  String get tournamentCancelRegistration => lookUp('tournamentCancelRegistration');
+
+  /// See `AppStrings.tournamentWithdrawn`.
+  String get tournamentWithdrawn => lookUp('tournamentWithdrawn');
+
+  /// See `AppStrings.tournamentViewResult`.
+  String get tournamentViewResult => lookUp('tournamentViewResult');
+
+  /// See `AppStrings.tournamentFinished`.
+  String get tournamentFinished => lookUp('tournamentFinished');
+
+  /// See `AppStrings.tournamentCancelled`.
+  String get tournamentCancelled => lookUp('tournamentCancelled');
+
+  /// See `AppStrings.tournamentCancelledHint`.
+  String get tournamentCancelledHint => lookUp('tournamentCancelledHint');
 }

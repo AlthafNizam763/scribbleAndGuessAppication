@@ -72,4 +72,45 @@ class NotificationsApi {
 
     return response.map((Map<String, dynamic> data) => asInt(data['unreadCount']));
   }
+
+  /// Tells the server which handset this is, so a check-in can reach it with
+  /// the app closed.
+  ///
+  /// Idempotent on the server — it is one upsert keyed on the token — which is
+  /// what lets the client call it on every launch, after every sign-in and on
+  /// every token refresh without any of the three checking first.
+  ///
+  /// The token is the *device's* address rather than the player's, so a phone
+  /// signed in as somebody new re-registers onto the same row and the
+  /// notifications follow the person now holding it.
+  Future<Result<int>> registerDeviceToken({
+    required String token,
+    required String platform,
+    String? deviceId,
+  }) async {
+    final Result<Map<String, dynamic>> response = await _client.post(
+      '/api/notifications/device-token',
+      body: <String, dynamic>{
+        'token': token,
+        'platform': platform,
+        if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,
+      },
+    );
+
+    return response.map((Map<String, dynamic> data) => asInt(data['devices']));
+  }
+
+  /// Retires this device, on sign-out.
+  ///
+  /// In the body rather than the path because a registration token is long and
+  /// opaque, and a URL is written to every access log between here and the
+  /// server.
+  Future<Result<bool>> unregisterDeviceToken(String token) async {
+    final Result<Map<String, dynamic>> response = await _client.delete(
+      '/api/notifications/device-token',
+      body: <String, dynamic>{'token': token},
+    );
+
+    return response.map((Map<String, dynamic> data) => asBool(data['removed']));
+  }
 }

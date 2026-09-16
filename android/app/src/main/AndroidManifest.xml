@@ -47,6 +47,21 @@
          requests FOREGROUND_SERVICE either, so it could not run as one. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Push notifications.
+
+         Required from API 33 (Android 13) onwards, where showing a
+         notification is a runtime permission like the camera. Without this
+         line the system prompt cannot be raised at all: the request silently
+         resolves as denied, every notification is dropped, and nothing in the
+         app or in logcat says why. On API 32 and below it is ignored and
+         notifications work regardless.
+
+         FirebaseMessaging.requestPermission() raises the prompt, once, from
+         NotificationPermissionService. Declining leaves the whole game
+         working — the tournament countdown is still on the screen — and only
+         costs the nudge that would have reached a closed app. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- A phone without a microphone can still play: it draws, guesses and
          types, and simply hears nothing. Declared not-required so the app
          stays installable on such a device. -->
@@ -87,6 +102,27 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Which channel a push lands on when the server did not name one,
+             and which icon the status bar draws.
+
+             Both matter more than they look. Android silently ignores a
+             channel id it has never been told about and delivers on the
+             default channel at default importance — no heads-up, no sound on
+             a locked phone — which to a player is indistinguishable from the
+             notification never arriving. The id here matches the channel
+             NotificationService creates at startup and the one the backend
+             names on every send; all three must stay in step.
+
+             The icon must be a monochrome drawable. Android tints it and
+             discards every colour in it, so a launcher icon used here renders
+             as a plain white square on API 21 and above. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="tournament_notifications" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notification" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

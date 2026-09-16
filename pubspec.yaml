@@ -95,6 +95,26 @@ dependencies:
   firebase_app_check: ^0.4.7
   firebase_analytics: ^12.5.0
   firebase_crashlytics: ^5.3.0
+  # Push notifications.
+  #
+  # The one thing Socket.IO structurally cannot do: reach a device whose app is
+  # terminated. A tournament check-in has a deadline attached, and the player it
+  # concerns is by definition the one who registered and then put their phone
+  # away — so there is no socket to push down. FCM hands the message to the
+  # operating system, which renders it whether the app is running or not.
+  #
+  # The socket stays exactly as it is for everything that happens while the app
+  # is open; this is not a replacement for it. See `lib/services/fcm_service.dart`.
+  firebase_messaging: ^16.7.0
+
+  # Draws a notification while the app is in the *foreground*.
+  #
+  # Android deliberately suppresses the system notification for a message that
+  # arrives while the app is on screen — otherwise every chat app would shade
+  # its own UI with banners. flutter_local_notifications is what puts one up
+  # anyway, and it is also what creates the high-importance channel that a
+  # background message is then delivered on.
+  flutter_local_notifications: ^22.3.1
 
 dev_dependencies:
   flutter_test:

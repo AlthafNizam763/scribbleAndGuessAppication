@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:scribble_guess/app/push_navigation.dart';
 import 'package:scribble_guess/app/router.dart';
 import 'package:scribble_guess/core/constants/app_constants.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
@@ -63,16 +64,22 @@ class ScribbleGuessApp extends ConsumerWidget {
           // invitation is addressed to the *player*, so it can land on any
           // screen, and a listener mounted per screen would either miss it
           // where somebody forgot or raise two dialogs where they did not.
-          child: RoomInvitationListener(
-            child: MediaQuery(
-              data: media.copyWith(
-                disableAnimations: media.disableAnimations || reducedMotion,
-                textScaler: media.textScaler.clamp(
-                  minScaleFactor: 0.9,
-                  maxScaleFactor: 1.4,
+          // Above the router for the same reason as the invitation listener
+          // below it: a notification is addressed to the player rather than to
+          // a screen, and a tap that launched the app from cold arrives before
+          // any screen exists to receive it.
+          child: PushNavigationListener(
+            child: RoomInvitationListener(
+              child: MediaQuery(
+                data: media.copyWith(
+                  disableAnimations: media.disableAnimations || reducedMotion,
+                  textScaler: media.textScaler.clamp(
+                    minScaleFactor: 0.9,
+                    maxScaleFactor: 1.4,
+                  ),
                 ),
+                child: child ?? const SizedBox.shrink(),
               ),
-              child: child ?? const SizedBox.shrink(),
             ),
           ),
         );

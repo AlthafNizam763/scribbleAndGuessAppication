@@ -78,16 +78,21 @@ class ApiClient {
   }) =>
       _send('PATCH', path, body: body, authenticated: authenticated);
 
-  /// `DELETE path`.
+  /// `DELETE path`, with an optional JSON body.
   ///
-  /// Carries no body. The two endpoints that use it — removing a friend and
-  /// lifting a block — name their target in the path, and the actor is the
-  /// bearer token, so there is nothing left to send.
+  /// Most callers send none: removing a friend and lifting a block both name
+  /// their target in the path, and the actor is the bearer token, so there is
+  /// nothing left to send.
+  ///
+  /// The exception is retiring a push token, which is a long opaque string
+  /// that would end up in every access log and proxy trace if it travelled in
+  /// the URL. It goes in the body instead.
   Future<Result<Map<String, dynamic>>> delete(
     String path, {
+    Map<String, dynamic>? body,
     bool authenticated = true,
   }) =>
-      _send('DELETE', path, authenticated: authenticated);
+      _send('DELETE', path, body: body, authenticated: authenticated);
 
   /// Releases the underlying connection pool.
   void dispose() {

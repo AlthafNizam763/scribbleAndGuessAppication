@@ -25,11 +25,22 @@ import 'package:scribble_guess/models/json_utils.dart';
 /// the response. The countdowns are drawn from the timestamps rather than from
 /// this, which is why they come down too.
 enum AutoTournamentStatus {
-  /// Created, registration has not opened. Usually momentary.
+  /// Scheduled, registration has not opened yet.
+  ///
+  /// Where a daily tournament spends most of its life: the evening one is
+  /// published in the morning and sits here for hours, showing its start time.
   upcoming('UPCOMING'),
 
   /// Anybody may join.
   registration('REGISTRATION'),
+
+  /// Registration closed; the roster is sealed and a short countdown is
+  /// running.
+  ///
+  /// Only reached on a deployment that runs tournaments back to back rather
+  /// than on a published schedule. Parsed because the server can still send
+  /// it, and treated as "closed, about to start" everywhere it matters.
+  starting('STARTING'),
 
   /// Registration closed; registered players are confirming they are here.
   checkIn('CHECK_IN'),
@@ -59,12 +70,51 @@ enum AutoTournamentStatus {
     return AutoTournamentStatus.upcoming;
   }
 
-  /// Whether this tournament still occupies its slot.
+  /// Whether this tournament has not finished yet.
   bool get isLive =>
       this == AutoTournamentStatus.upcoming ||
       this == AutoTournamentStatus.registration ||
+      this == AutoTournamentStatus.starting ||
       this == AutoTournamentStatus.checkIn ||
       this == AutoTournamentStatus.running;
+
+  /// Whether this tournament is over, however it ended.
+  bool get isFinished =>
+      this == AutoTournamentStatus.completed ||
+      this == AutoTournamentStatus.cancelled;
+}
+
+/// Which of the day's three tournaments this is.
+///
+/// Named rather than numbered because the name is what a player reads and it
+/// survives a change of clock: moving the evening tournament from eight to
+/// nine is a server configuration change, and every card already labelled
+/// "Evening" is still right afterwards.
+enum DailySlot {
+  /// The first of the day.
+  morning('MORNING', 'Morning'),
+
+  /// The second.
+  afternoon('AFTERNOON', 'Afternoon'),
+
+  /// The last.
+  evening('EVENING', 'Evening');
+
+  const DailySlot(this.wire, this.label);
+
+  /// The value the server sends.
+  final String wire;
+
+  /// What to show on the card.
+  final String label;
+
+  /// Parses [v], falling back to [DailySlot.morning].
+  static DailySlot fromWire(String? v) {
+    for (final DailySlot slot in DailySlot.values) {
+      if (slot.wire == v) return slot;
+    }
+    return DailySlot.morning;
+  }
 }
 
 /// Whether a seat belongs to a person or to the server.
@@ -376,8 +426,9 @@ class AutoTournament extends Equatable {
   /// Creates a tournament.
   const AutoTournament({
     this.id = '',
+    this.tournamentDate = '',
+    this.dailySlot = DailySlot.morning,
     this.slotNumber = 0,
-    this.tournamentNumber = 0,
     this.name = '',
     this.description = '',
     this.status = AutoTournamentStatus.upcoming,
@@ -396,10 +447,13 @@ class AutoTournament extends Equatable {
     this.checkInOpenAtMs = 0,
     this.checkInCloseAtMs = 0,
     this.startAtMs = 0,
+    this.phaseEndsAtMs,
+    this.checkInRequired = false,
     this.totalRounds = 0,
     this.currentRound = 0,
     this.entryFee = 0,
     this.cancelReason,
+    this.completedAtMs,
     this.viewer = const ViewerTournamentState(),
     this.winner,
   });
@@ -410,8 +464,9 @@ class AutoTournament extends Equatable {
 
     return AutoTournament(
       id: asString(json['id']),
+      tournamentDate: asString(json['tournamentDate']),
+      dailySlot: DailySlot.fromWire(asString(json['dailySlot'])),
       slotNumber: asInt(json['slotNumber']),
-      tournamentNumber: asInt(json['tournamentNumber']),
       name: asString(json['name']),
       description: asString(json['description']),
       status: AutoTournamentStatus.fromWire(asString(json['status'])),
@@ -432,12 +487,19 @@ class AutoTournament extends Equatable {
       checkInOpenAtMs: asInt(json['checkInOpenAtMs']),
       checkInCloseAtMs: asInt(json['checkInCloseAtMs']),
       startAtMs: asInt(json['startAtMs']),
+      phaseEndsAtMs: json['phaseEndsAtMs'] == null
+          ? null
+          : asInt(json['phaseEndsAtMs']),
+      checkInRequired: asBool(json['checkInRequired']),
       totalRounds: asInt(json['totalRounds']),
       currentRound: asInt(json['currentRound']),
       entryFee: asInt(json['entryFee']),
       cancelReason: asString(json['cancelReason']).isEmpty
           ? null
           : asString(json['cancelReason']),
+      completedAtMs: json['completedAtMs'] == null
+          ? null
+          : asInt(json['completedAtMs']),
       viewer: ViewerTournamentState.fromJson(asMap(json['viewer'])),
       winner: winner is Map
           ? TournamentParticipant.fromJson(asMap(winner))
@@ -448,13 +510,21 @@ class AutoTournament extends Equatable {
   /// The server-issued id.
   final String id;
 
-  /// Which of the slots this occupies, 1-based.
+  /// The calendar day this belongs to, `YYYY-MM-DD`.
+  ///
+  /// In the server's configured timezone, not the phone's. A client must not
+  /// decide from its own clock which day a schedule is for — a player in
+  /// another timezone would otherwise see "today" roll over at the wrong
+  /// moment and think the tournaments had vanished.
+  final String tournamentDate;
+
+  /// Which of the day's three this is.
+  final DailySlot dailySlot;
+
+  /// The same thing as a number, 1 to 3, for ordering.
   final int slotNumber;
 
-  /// The display number, unique for all time.
-  final int tournamentNumber;
-
-  /// "Daily Scribble Cup #7".
+  /// "Ink Royale".
   final String name;
 
   /// What it is, in a sentence.
@@ -507,11 +577,26 @@ class AutoTournament extends Equatable {
   /// When check-in opens. Equal to [registrationCloseAtMs].
   final int checkInOpenAtMs;
 
-  /// When check-in closes and the bracket is drawn.
+  /// When check-in closes and the bracket is drawn. Equal to [startAtMs].
   final int checkInCloseAtMs;
 
-  /// When play begins.
+  /// When play begins — the published start time.
   final int startAtMs;
+
+  /// The deadline this tournament is actually counting down to, or null.
+  ///
+  /// ## Why the server picks the clock
+  ///
+  /// Because "which clock do I show" is a question about the lifecycle, and
+  /// the lifecycle is server state. Deriving it here would mean knowing that
+  /// `UPCOMING` counts down to registration opening, `REGISTRATION` to the
+  /// window closing and `CHECK_IN` to the start — three rules that would have
+  /// to be reimplemented here, in the web client, and kept in step with the
+  /// server. One number, always the next thing that will happen.
+  final int? phaseEndsAtMs;
+
+  /// Whether this tournament has a check-in step at all.
+  final bool checkInRequired;
 
   /// How many bracket rounds there are. Zero before seeding.
   final int totalRounds;
@@ -525,17 +610,31 @@ class AutoTournament extends Equatable {
   /// Why a cancelled tournament was cancelled.
   final String? cancelReason;
 
+  /// When it finished, or null while it has not.
+  final int? completedAtMs;
+
   /// What the local player can do here.
   final ViewerTournamentState viewer;
 
   /// Who won, once it is over.
+  ///
+  /// A snapshot taken when the final was decided, so the name and avatar are
+  /// the ones they won under. Belongs to this tournament and no other — a
+  /// screen drawing three cards gets three independent answers, and two of
+  /// them are usually null.
   final TournamentParticipant? winner;
 
   /// Whether this refers to a real tournament.
   bool get isEmpty => id.isEmpty;
 
-  /// The deadline this tournament is currently counting down to, or null.
-  int? get activeDeadlineMs => switch (status) {
+  /// The deadline this tournament is counting down to, or null.
+  ///
+  /// The server's answer where it sent one. The fallback only matters for a
+  /// response from a server older than this field.
+  int? get activeDeadlineMs =>
+      phaseEndsAtMs ??
+      switch (status) {
+        AutoTournamentStatus.upcoming => registrationOpenAtMs,
         AutoTournamentStatus.registration => registrationCloseAtMs,
         AutoTournamentStatus.checkIn => checkInCloseAtMs,
         _ => null,
@@ -544,51 +643,72 @@ class AutoTournament extends Equatable {
   @override
   List<Object?> get props => <Object?>[
         id,
+        tournamentDate,
+        dailySlot,
         slotNumber,
-        tournamentNumber,
         name,
         status,
         humanPlayerCount,
         botPlayerCount,
         totalPlayers,
+        registrationOpenAtMs,
         registrationCloseAtMs,
         checkInCloseAtMs,
+        startAtMs,
+        phaseEndsAtMs,
         totalRounds,
         currentRound,
         cancelReason,
+        completedAtMs,
         viewer,
         winner,
       ];
 }
 
-/// One slot, holding a tournament or nothing.
+/// One day's schedule: at most three tournaments, in the order they happen.
 ///
-/// An empty slot is a row rather than an absence, because the screen shows
-/// three cards and "a new tournament will be created automatically" is a card.
-class TournamentSlot extends Equatable {
-  /// Creates a slot.
-  const TournamentSlot({this.slotNumber = 0, this.tournament});
+/// ## Why this is a class and not a bare list
+///
+/// Because the date and the timezone are part of the answer. A screen that
+/// says "Today" has to know which day the server meant, and a start time of
+/// 20:00 is only meaningful alongside the zone it is in — a player reading it
+/// off their own clock in another country would turn up hours late.
+class TournamentDay extends Equatable {
+  /// Creates a day.
+  const TournamentDay({
+    this.tournamentDate = '',
+    this.timeZone = 'UTC',
+    this.tournaments = const <AutoTournament>[],
+  });
 
-  /// Builds a slot from a decoded JSON map.
-  factory TournamentSlot.fromJson(Map<String, dynamic> json) {
-    final Object? tournament = json['tournament'];
+  /// Builds a day from a decoded JSON map.
+  factory TournamentDay.fromJson(Map<String, dynamic> json) => TournamentDay(
+        tournamentDate: asString(json['tournamentDate']),
+        timeZone: asString(json['timeZone'], 'UTC'),
+        tournaments: <AutoTournament>[
+          for (final dynamic raw in asList(json['tournaments']))
+            AutoTournament.fromJson(asMap(raw)),
+        ],
+      );
 
-    return TournamentSlot(
-      slotNumber: asInt(json['slotNumber']),
-      tournament: tournament is Map
-          ? AutoTournament.fromJson(asMap(tournament))
-          : null,
-    );
-  }
+  /// An empty day, before the first response arrives.
+  static const TournamentDay empty = TournamentDay();
 
-  /// 1-based.
-  final int slotNumber;
+  /// `YYYY-MM-DD`, in [timeZone].
+  final String tournamentDate;
 
-  /// What is in it, or null between tournaments.
-  final AutoTournament? tournament;
+  /// The zone the date and every time in [tournaments] are in.
+  final String timeZone;
+
+  /// The day's tournaments, in the order they happen. At most three.
+  final List<AutoTournament> tournaments;
+
+  /// Whether there is anything to draw.
+  bool get isEmpty => tournaments.isEmpty;
 
   @override
-  List<Object?> get props => <Object?>[slotNumber, tournament];
+  List<Object?> get props =>
+      <Object?>[tournamentDate, timeZone, tournaments];
 }
 
 /// One pairing in a bracket.

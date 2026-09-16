@@ -59,6 +59,13 @@ enum NotificationKind {
   /// A tournament was announced.
   tournamentAnnouncement('tournament_announcement'),
 
+  /// A tournament this player registered for has opened check-in.
+  ///
+  /// The one kind that also arrives as a push, because it is the one with a
+  /// deadline: a player who misses the window loses their place. `data`
+  /// carries `tournamentId`.
+  tournamentCheckInOpen('tournament_checkin_open'),
+
   /// A message from the operators.
   systemAnnouncement('system_announcement'),
 

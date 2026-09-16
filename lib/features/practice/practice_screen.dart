@@ -192,6 +192,11 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
 
   void _undo() => setState(() => _board = _board.undo());
 
+  /// Practice keeps its own board, so redo is that board's own pure operation
+  /// rather than a repository call. The game screen's redo goes through the
+  /// server because everybody else has to see it too.
+  void _redo() => setState(() => _board = _board.redo());
+
   void _clear() => setState(() {
         _board = DrawingBoard.empty;
         _pending = null;
@@ -245,6 +250,7 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
               controller: _guessController,
               verdict: _session.lastVerdict,
               onUndo: _undo,
+              onRedo: _redo,
               onClear: _clear,
               onGuess: _submitGuess,
               onGiveUp: _giveUp,
@@ -405,6 +411,7 @@ class _PracticeControls extends StatelessWidget {
     required this.controller,
     required this.verdict,
     required this.onUndo,
+    required this.onRedo,
     required this.onClear,
     required this.onGuess,
     required this.onGiveUp,
@@ -414,6 +421,7 @@ class _PracticeControls extends StatelessWidget {
   final TextEditingController controller;
   final GuessVerdict? verdict;
   final VoidCallback onUndo;
+  final VoidCallback onRedo;
   final VoidCallback onClear;
   final ValueChanged<String> onGuess;
   final VoidCallback onGiveUp;
@@ -435,7 +443,17 @@ class _PracticeControls extends StatelessWidget {
                   tooltip: context.l10n.practiceTools,
                   icon: const Icon(Icons.palette_outlined),
                   color: colors.ink,
-                  onPressed: () => showToolTray(context),
+                  // Practice has no colour row of its own, so the tray is the
+                  // only palette on this screen — and it carries the same
+                  // three board actions as the row beside it.
+                  onPressed: () => showToolTray(
+                    context,
+                    actions: DrawingToolActions(
+                      onUndo: board.canUndo ? onUndo : null,
+                      onRedo: board.canRedo ? onRedo : null,
+                      onClear: board.canUndo ? onClear : null,
+                    ),
+                  ),
                 ),
                 IconButton(
                   tooltip: context.l10n.practiceUndo,

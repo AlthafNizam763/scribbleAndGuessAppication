@@ -94,11 +94,10 @@ final StreamProvider<String> tournamentEventsProvider = StreamProvider<String>(
   },
 );
 
-/// The slots, in order, each holding a tournament or nothing.
-class TournamentsNotifier
-    extends AutoDisposeAsyncNotifier<List<TournamentSlot>> {
+/// Today's tournaments, in the order they happen.
+class TournamentsNotifier extends AutoDisposeAsyncNotifier<TournamentDay> {
   @override
-  Future<List<TournamentSlot>> build() {
+  Future<TournamentDay> build() {
     // `listen` rather than `watch`: a push should refresh the listing, not
     // rebuild this provider and re-enter `build` from the top.
     //
@@ -115,40 +114,47 @@ class TournamentsNotifier
     return _load();
   }
 
-  Future<List<TournamentSlot>> _load() async {
-    final Result<List<TournamentSlot>> result =
-        await ref.read(tournamentsApiProvider).slots();
+  Future<TournamentDay> _load() async {
+    final Result<TournamentDay> result =
+        await ref.read(tournamentsApiProvider).today();
 
     return switch (result) {
-      Ok<List<TournamentSlot>>(:final List<TournamentSlot> value) => value,
+      Ok<TournamentDay>(:final TournamentDay value) => value,
       // Thrown rather than returned so the screen's error branch renders,
       // which is where the retry lives.
-      Err<List<TournamentSlot>>(:final Failure failure) => throw failure,
+      Err<TournamentDay>(:final Failure failure) => throw failure,
     };
   }
 
-  /// Re-reads every slot.
+  /// Re-reads the day.
   ///
-  /// Used by pull-to-refresh and by the socket listener. A whole-listing
-  /// re-read rather than a patch keyed on the event: there are three rows, the
+  /// Used by pull-to-refresh and by the socket listener. A whole-day re-read
+  /// rather than a patch keyed on the event: there are at most three rows, the
   /// response is small, and an event-shaped patch would be a second model of
   /// the tournament lifecycle living in the client — which is the thing this
   /// feature most wants to avoid having two of.
   Future<void> refresh() async {
-    state = await AsyncValue.guard<List<TournamentSlot>>(_load);
+    state = await AsyncValue.guard<TournamentDay>(_load);
   }
 
   /// Replaces one tournament in place, from a server response.
+  ///
+  /// Only the row it names. The other two are left exactly as they were, which
+  /// is the whole of "one tournament's result does not touch another" on this
+  /// side: there is no shared field to write.
   void _replace(AutoTournament updated) {
-    final List<TournamentSlot> current =
-        state.valueOrNull ?? const <TournamentSlot>[];
+    final TournamentDay current = state.valueOrNull ?? TournamentDay.empty;
 
-    state = AsyncValue<List<TournamentSlot>>.data(<TournamentSlot>[
-      for (final TournamentSlot slot in current)
-        slot.tournament?.id == updated.id
-            ? TournamentSlot(slotNumber: slot.slotNumber, tournament: updated)
-            : slot,
-    ]);
+    state = AsyncValue<TournamentDay>.data(
+      TournamentDay(
+        tournamentDate: current.tournamentDate,
+        timeZone: current.timeZone,
+        tournaments: <AutoTournament>[
+          for (final AutoTournament row in current.tournaments)
+            row.id == updated.id ? updated : row,
+        ],
+      ),
+    );
   }
 
   /// Takes a place in [tournamentId].
@@ -162,10 +168,18 @@ class TournamentsNotifier
         await ref.read(tournamentsApiProvider).register(tournamentId);
 
     if (result case Ok<AutoTournament>(value: final AutoTournament updated)) {
-      // The whole listing, not just this row: joining one tournament changes
-      // whether the player may join the other two, and that lives in each
-      // row's own `viewer` block.
-      await refresh();
+      // This row only.
+      //
+      // ## Why this no longer re-reads the whole day
+      //
+      // Because joining one tournament used to change whether the player could
+      // join the other two, and that answer lived in each row's own `viewer`
+      // block — so the listing had to be re-read to keep them honest. There is
+      // no such rule now: a player may hold a place in all three, and the
+      // other two cards are unaffected by this one. Patching the row is both
+      // cheaper and more truthful, because it cannot accidentally show a
+      // change to a tournament nothing happened to.
+      _replace(updated);
       return Ok<AutoTournament>(updated);
     }
 
@@ -177,9 +191,10 @@ class TournamentsNotifier
     final Result<AutoTournament> result =
         await ref.read(tournamentsApiProvider).withdraw(tournamentId);
 
-    if (result case Ok<AutoTournament>()) {
-      // Same reason as registering: leaving one unblocks the other two.
-      await refresh();
+    if (result case Ok<AutoTournament>(value: final AutoTournament updated)) {
+      // Same reason as registering: leaving one changes nothing about the
+      // others.
+      _replace(updated);
     }
 
     return result;
@@ -200,10 +215,12 @@ class TournamentsNotifier
   }
 }
 
-/// The three slots.
-final AutoDisposeAsyncNotifierProvider<TournamentsNotifier, List<TournamentSlot>>
-    tournamentsProvider = AsyncNotifierProvider.autoDispose<TournamentsNotifier,
-        List<TournamentSlot>>(TournamentsNotifier.new);
+/// Today's tournaments.
+final AutoDisposeAsyncNotifierProvider<TournamentsNotifier, TournamentDay>
+    tournamentsProvider =
+    AsyncNotifierProvider.autoDispose<TournamentsNotifier, TournamentDay>(
+  TournamentsNotifier.new,
+);
 
 /// One tournament, kept fresh on its own.
 ///

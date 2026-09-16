@@ -1748,6 +1748,16 @@ abstract final class AppStrings {
   static const String tournamentNoneRunningHint =
       'New tournaments are created automatically.';
 
+  /// Shown when today has no tournaments at all.
+  static const String tournamentNoneToday = 'Nothing scheduled for today';
+
+  /// The reassurance under [tournamentNoneToday].
+  ///
+  /// True rather than soothing: tomorrow's three are published before midnight
+  /// by the organiser, so there is genuinely something to come back for.
+  static const String tournamentNoneTodayHint =
+      'Three more are published automatically for tomorrow.';
+
   /// Label for a slot, followed by its number.
   static const String tournamentSlot = 'Slot';
 
@@ -1842,6 +1852,13 @@ abstract final class AppStrings {
   static const String tournamentAwaiting = 'To be decided';
 
   /// Shown when the player cannot join because they are in another tournament.
+  ///
+  /// ## Unused
+  ///
+  /// Kept because the translated catalogues carry it, and removing a key is
+  /// not worth a churn of eleven files. The rule it described is gone: a
+  /// player may hold a place in all three of a day's tournaments, so there is
+  /// no longer anything that refuses them for being in another.
   static const String tournamentAlreadyIn = 'You are already in a tournament.';
 
   /// Header above the placement table.
@@ -1849,4 +1866,39 @@ abstract final class AppStrings {
 
   /// Explains that the tournament could not run.
   static const String tournamentCancelledBecause = 'Cancelled:';
+
+  /// Counts down to registration opening, on a tournament still to come.
+  static const String tournamentJoiningOpensIn = 'Joining opens in';
+
+  /// Counts down to the published start time.
+  static const String tournamentStartsIn = 'Starts in';
+
+  /// Shown on a card while check-in is open and the player has not confirmed.
+  static const String tournamentCheckInOpen = 'Check-in is open';
+
+  /// Gives a place back, before the draw is made.
+  ///
+  /// Distinct from [tournamentWithdraw] because it is what the button says
+  /// next to "Registered" — cancelling a registration, not leaving a game.
+  static const String tournamentCancelRegistration = 'Cancel Registration';
+
+  /// Confirmation after cancelling a registration.
+  static const String tournamentWithdrawn = 'Your registration was cancelled.';
+
+  /// Opens a finished tournament's result.
+  static const String tournamentViewResult = 'View Result';
+
+  /// Shown on a finished tournament that somehow has no winner recorded.
+  static const String tournamentFinished = 'This tournament has finished.';
+
+  /// Shown on a cancelled tournament with no reason given.
+  static const String tournamentCancelled = 'This tournament was cancelled.';
+
+  /// Where to look after a cancellation.
+  ///
+  /// Nothing is created to replace a cancelled tournament — the day already
+  /// has its three — so this points at the rest of the day rather than
+  /// promising a replacement that is not coming.
+  static const String tournamentCancelledHint =
+      'The other tournaments today are unaffected.';
 }

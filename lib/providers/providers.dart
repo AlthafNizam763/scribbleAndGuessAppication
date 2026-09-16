@@ -16,6 +16,7 @@ export 'package:scribble_guess/providers/location_provider.dart';
 export 'package:scribble_guess/providers/notifications_provider.dart';
 export 'package:scribble_guess/providers/profile_provider.dart';
 export 'package:scribble_guess/providers/progression_provider.dart';
+export 'package:scribble_guess/providers/push_provider.dart';
 export 'package:scribble_guess/providers/quick_play_provider.dart';
 export 'package:scribble_guess/providers/ranking_provider.dart';
 export 'package:scribble_guess/providers/replay_provider.dart';

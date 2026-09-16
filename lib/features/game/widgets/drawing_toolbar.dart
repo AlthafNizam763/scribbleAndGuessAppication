@@ -112,7 +112,21 @@ class DrawingToolbar extends ConsumerWidget {
               icon: iconFor(tool.tool),
               tooltip: context.l10n.gameTools,
               selected: !tool.isErasing,
-              onPressed: () => showToolTray(context),
+              // The same three callbacks the bar draws below, handed to the
+              // tray so a drawer who opened it to change nib does not have to
+              // close it again to take a stroke back.
+              onPressed: () => showToolTray(
+                context,
+                actions: DrawingToolActions(
+                  onUndo: board.canUndo
+                      ? () => ref.read(drawingRepositoryProvider).undo()
+                      : null,
+                  onRedo: board.canRedo
+                      ? () => ref.read(drawingRepositoryProvider).redo()
+                      : null,
+                  onClear: board.canUndo ? onClear : null,
+                ),
+              ),
             ),
             _ToolButton(
               icon: iconFor(DrawTool.eraser),

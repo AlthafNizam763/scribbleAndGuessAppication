@@ -24,21 +24,21 @@ class TournamentsApi {
 
   // --- automatic knockout tournaments --------------------------------------
 
-  /// The tournament slots, in order.
+  /// Today's tournaments, in the order they happen.
   ///
-  /// A slot with nothing in it comes back as a row with a null tournament
-  /// rather than being left out, because the screen shows one card per slot
-  /// and "a new one will be created automatically" is a card.
-  Future<Result<List<TournamentSlot>>> slots() async {
+  /// At most three, because at most three exist — the server keys them on
+  /// `{date, slot}` behind a unique index. Fewer is possible and honest: a
+  /// deployment that first booted this afternoon has no morning tournament,
+  /// because one whose registration window had already closed could never have
+  /// been joined.
+  ///
+  /// The date and timezone come with them, so the screen can say which day it
+  /// is showing without guessing from the phone's clock.
+  Future<Result<TournamentDay>> today() async {
     final Result<Map<String, dynamic>> response =
         await _client.get('/api/tournaments');
 
-    return response.map(
-      (Map<String, dynamic> data) => <TournamentSlot>[
-        for (final dynamic raw in asList(data['slots']))
-          TournamentSlot.fromJson(asMap(raw)),
-      ],
-    );
+    return response.map(TournamentDay.fromJson);
   }
 
   /// One tournament, with the local player's own state folded in.
@@ -52,13 +52,18 @@ class TournamentsApi {
     );
   }
 
-  /// Takes a place, and returns the tournament as it now stands.
+  /// Takes a place in one tournament, and returns it as it now stands.
+  ///
+  /// Only that tournament. Joining the morning one does not register anybody
+  /// for the afternoon, and being in the morning one is not a reason to be
+  /// refused the afternoon — a player may hold a place in all three of a
+  /// day's tournaments.
   ///
   /// Registering twice is a no-op on the server rather than an error, so a
   /// double tap resolves to the same tournament a single one would. The
-  /// refusals worth showing the player are "you are already in another
-  /// tournament" and "that tournament is full", both of which arrive as a
-  /// [Failure] carrying the server's own sentence.
+  /// refusals worth showing are "registration has closed for this tournament"
+  /// and "that tournament is full", both of which arrive as a [Failure]
+  /// carrying the server's own sentence.
   Future<Result<AutoTournament>> register(String tournamentId) async {
     final Result<Map<String, dynamic>> response =
         await _client.post('/api/tournaments/$tournamentId/register');

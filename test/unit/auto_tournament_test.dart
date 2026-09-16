@@ -86,31 +86,6 @@ void main() {
   });
 
   group('a tournament', () {
-    Map<String, dynamic> payload({String status = 'REGISTRATION'}) =>
-        <String, dynamic>{
-          'id': 't1',
-          'slotNumber': 2,
-          'tournamentNumber': 7,
-          'name': 'Daily Scribble Cup #7',
-          'status': status,
-          'minPlayers': 4,
-          'maxPlayers': 16,
-          'humanPlayerCount': 1,
-          'botPlayerCount': 3,
-          'totalPlayers': 4,
-          'registrationCloseAtMs': 1700000000000,
-          'checkInCloseAtMs': 1700000600000,
-          'botDifficulty': 'NORMAL',
-          'viewer': <String, dynamic>{
-            'isRegistered': true,
-            'isCheckedIn': false,
-            'canRegister': false,
-            'canCheckIn': true,
-            'canWithdraw': false,
-            'blockedReason': null,
-          },
-        };
-
     test('keeps the human and AI counts apart', () {
       final AutoTournament row = AutoTournament.fromJson(payload());
 
@@ -163,13 +138,77 @@ void main() {
     });
   });
 
-  group('a slot', () {
-    test('parses an empty slot as present with nothing in it', () {
-      final TournamentSlot slot =
-          TournamentSlot.fromJson(const <String, dynamic>{'slotNumber': 3});
+  group('a day', () {
+    test('parses the schedule, the date and the zone it is in', () {
+      final TournamentDay day = TournamentDay.fromJson(<String, dynamic>{
+        'tournamentDate': '2026-09-16',
+        'timeZone': 'Asia/Kolkata',
+        'tournaments': <dynamic>[
+          payload(status: 'COMPLETED'),
+          payload(status: 'REGISTRATION'),
+          payload(status: 'UPCOMING'),
+        ],
+      });
 
-      expect(slot.slotNumber, 3);
-      expect(slot.tournament, isNull);
+      expect(day.tournamentDate, '2026-09-16');
+      expect(day.timeZone, 'Asia/Kolkata');
+      expect(day.tournaments, hasLength(3));
+      expect(day.isEmpty, isFalse);
+    });
+
+    /// A day with nothing on it is a normal answer, not a broken one: a
+    /// deployment that first booted this evening never published a morning
+    /// tournament, because one nobody could have joined is not worth a card.
+    test('parses a day with nothing on it', () {
+      final TournamentDay day = TournamentDay.fromJson(const <String, dynamic>{
+        'tournamentDate': '2026-09-16',
+        'timeZone': 'UTC',
+        'tournaments': <dynamic>[],
+      });
+
+      expect(day.isEmpty, isTrue);
+      expect(day.tournaments, isEmpty);
+    });
+
+    test('survives a response with nothing in it at all', () {
+      final TournamentDay day =
+          TournamentDay.fromJson(const <String, dynamic>{});
+
+      expect(day.isEmpty, isTrue);
+      expect(day.timeZone, 'UTC');
+    });
+
+    /// The rule that a result belongs to one tournament, on this side of the
+    /// wire: three rows, three independent winners, two of them absent.
+    test('keeps each winner on its own tournament', () {
+      final TournamentDay day = TournamentDay.fromJson(<String, dynamic>{
+        'tournamentDate': '2026-09-16',
+        'timeZone': 'Asia/Kolkata',
+        'tournaments': <dynamic>[
+          <String, dynamic>{
+            ...payload(status: 'COMPLETED'),
+            'dailySlot': 'MORNING',
+            'winner': const <String, dynamic>{
+              'registrationId': 'r1',
+              'displayName': 'Althaf',
+              'isBot': false,
+            },
+          },
+          <String, dynamic>{
+            ...payload(status: 'REGISTRATION'),
+            'dailySlot': 'AFTERNOON',
+          },
+          <String, dynamic>{
+            ...payload(status: 'UPCOMING'),
+            'dailySlot': 'EVENING',
+          },
+        ],
+      });
+
+      expect(day.tournaments[0].winner?.displayName, 'Althaf');
+      expect(day.tournaments[0].dailySlot, DailySlot.morning);
+      expect(day.tournaments[1].winner, isNull);
+      expect(day.tournaments[2].winner, isNull);
     });
   });
 
@@ -267,3 +306,38 @@ void main() {
     });
   });
 }
+
+/// One tournament as the server sends it.
+///
+/// Top level rather than scoped to a group, because both the tournament tests
+/// and the day tests build rows from it — and a day is three tournaments, so
+/// having two copies of what one looks like would be the fastest way for them
+/// to disagree.
+Map<String, dynamic> payload({String status = 'REGISTRATION'}) =>
+    <String, dynamic>{
+      'id': 't1',
+      'tournamentDate': '2026-09-16',
+      'dailySlot': 'AFTERNOON',
+      'slotNumber': 2,
+      'name': 'Doodle Rush',
+      'status': status,
+      'minPlayers': 4,
+      'maxPlayers': 16,
+      'humanPlayerCount': 1,
+      'botPlayerCount': 3,
+      'totalPlayers': 4,
+      'registrationOpenAtMs': 1699999400000,
+      'registrationCloseAtMs': 1700000000000,
+      'checkInCloseAtMs': 1700000600000,
+      'startAtMs': 1700000600000,
+      'botDifficulty': 'NORMAL',
+      'checkInRequired': true,
+      'viewer': <String, dynamic>{
+        'isRegistered': true,
+        'isCheckedIn': false,
+        'canRegister': false,
+        'canCheckIn': true,
+        'canWithdraw': false,
+        'blockedReason': null,
+      },
+    };

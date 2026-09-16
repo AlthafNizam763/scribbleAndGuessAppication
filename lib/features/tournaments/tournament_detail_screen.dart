@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/core/utils/result.dart';
+import 'package:scribble_guess/core/utils/time_utils.dart';
 import 'package:scribble_guess/features/tournaments/tournament_widgets.dart';
 import 'package:scribble_guess/models/auto_tournament.dart';
 import 'package:scribble_guess/models/room.dart';
@@ -241,7 +242,8 @@ class _Summary extends StatelessWidget {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  '${context.l10n.tournamentSlot} ${tournament.slotNumber}'
+                  '${tournament.dailySlot.label}'
+                  '  ·  ${TimeUtils.formatClock(tournament.startAtMs)}'
                   '  ·  ${context.l10n.tournamentFormatKnockout}',
                   style: text.bodySmall?.copyWith(color: colors.inkFaint),
                 ),
@@ -273,9 +275,19 @@ class _Summary extends StatelessWidget {
           if (tournament.activeDeadlineMs != null) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
             TournamentCountdown(
-              label: tournament.status == AutoTournamentStatus.registration
-                  ? context.l10n.tournamentClosesIn
-                  : context.l10n.tournamentCheckInClosesIn,
+              // The same three-way answer the card gives, because the clock
+              // means the same thing on both screens: before the window it is
+              // counting to joining, inside it to the window closing, and in
+              // check-in to the published start.
+              label: switch (tournament.status) {
+                AutoTournamentStatus.upcoming =>
+                  context.l10n.tournamentJoiningOpensIn,
+                AutoTournamentStatus.registration =>
+                  context.l10n.tournamentClosesIn,
+                AutoTournamentStatus.checkIn =>
+                  context.l10n.tournamentStartsIn,
+                _ => context.l10n.tournamentStartsIn,
+              },
               deadlineMs: tournament.activeDeadlineMs!,
               onElapsed: onDeadlinePassed,
             ),

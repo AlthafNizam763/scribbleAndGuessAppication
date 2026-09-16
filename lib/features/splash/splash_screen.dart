@@ -9,6 +9,7 @@ import 'package:scribble_guess/core/widgets/brand_logo.dart';
 import 'package:scribble_guess/core/widgets/sketch_button.dart';
 import 'package:scribble_guess/providers/providers.dart';
 import 'package:scribble_guess/routes/route_names.dart';
+import 'package:scribble_guess/services/fcm_service.dart';
 import 'package:scribble_guess/theme/theme.dart';
 
 /// The opening beat: the wordmark, a session, then straight on to wherever the
@@ -66,8 +67,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }
 
     if (!mounted) return;
+
+    // Push, once there is a session to register the device against.
+    //
+    // Here rather than in `main` because the registration is keyed to a
+    // *player*: a token posted before sign-in would have no owner, and the
+    // check-in fan-out finds devices by user id. Here rather than on the
+    // tournament screen because a player who registers for a tournament and
+    // then closes the app is the exact case this exists for — by the time
+    // they need it, the app is gone.
+    //
+    // Deliberately not awaited. Everything it does is best-effort, none of it
+    // is on the path to the first screen, and a slow token fetch on a poor
+    // connection must not hold the splash up.
+    unawaited(_startPush());
+
     final bool hasProfile = ref.read(hasProfileProvider);
     context.goNamed(hasProfile ? AppRoutes.home : AppRoutes.profile);
+  }
+
+  /// Brings push up and registers this device. Never throws.
+  Future<void> _startPush() async {
+    final FcmService fcm = ref.read(fcmServiceProvider);
+
+    final bool started = await fcm.start();
+    if (!started) return;
+
+    await fcm.registerToken();
   }
 
   Future<void> _retry() async {
