@@ -1,0 +1,32 @@
+{
+  "name": "scribble-and-guess-functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Authoritative Cloud Functions backend for Scribble & Guess",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "eslint --max-warnings 0 \"src/**/*.ts\"",
+    "test": "tsc -p tsconfig.test.json && node --test \"lib-test/**/*.test.js\"",
+    "serve": "npm run build && firebase emulators:start --only functions,firestore,auth,storage",
+    "shell": "npm run build && firebase functions:shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log",
+    "seed": "npm run build && node lib/scripts/seedWords.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.9",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "scribble-guess-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Realtime drawing relay for Scribble & Guess (Firebase-authenticated)",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "firebase-admin": "^12.7.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

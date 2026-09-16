@@ -1,0 +1,141 @@
+name: scribble_guess
+description: "Scribble & Guess - a real-time multiplayer drawing and guessing game."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Material's own strings, date formats and -- the reason it is here --
+  # GlobalWidgetsLocalizations, which is what reports Arabic as right-to-left.
+  # Without this package MaterialApp ships DefaultMaterialLocalizations, which
+  # supports English only: naming any other locale in supportedLocales would
+  # assert the first time a widget looked up a tooltip. It also means the RTL
+  # mirroring is the framework's, not ours -- every Directionality-aware
+  # widget (Row, padding, drawers, back arrows) flips without a single
+  # mirrored layout being written by hand.
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Navigation
+  go_router: ^17.5.0
+
+  # Local storage
+  shared_preferences: ^2.5.5
+
+  # Keystore-backed storage for the backend session token. Ordinary
+  # preferences stay in shared_preferences; only the JWT lives here.
+  flutter_secure_storage: ^9.2.4
+
+  # Sound effects. Short bundled WAVs only -- no streaming, no background
+  # audio -- which is why this is audioplayers rather than just_audio.
+  audioplayers: ^6.5.1
+
+  # Realtime transport
+  socket_io_client: ^3.1.6
+
+  # Voice chat. Peer-to-peer audio between guessers; the existing Socket.IO
+  # connection above carries only the SDP and ICE candidates that set it up,
+  # so no second networking library is introduced and no audio ever crosses
+  # the game socket.
+  flutter_webrtc: ^1.6.2
+
+  # REST transport. Already present transitively (see pubspec.lock);
+  # promoted to a direct dependency so lib/data/api may import it.
+  http: ^1.5.0
+
+  # Approximate location, for the locality leaderboard only.
+  #
+  # geolocator reads one coarse fix on demand -- there is no position stream,
+  # no background mode and no service declared in the manifest, so the app has
+  # no way to follow anybody around even by accident. geocoding turns that fix
+  # into a town name using the platform geocoder (android.location.Geocoder,
+  # CLGeocoder on iOS), which is why no coordinate is sent anywhere: the
+  # latitude and longitude are discarded inside LocationService before its
+  # caller ever sees them.
+  #
+  # geocoding has no browser implementation -- there is no reverse geocoder in
+  # a browser to call -- so the web build keeps the manual town fields rather
+  # than posting coordinates to a third party. See lib/services/location_service.dart.
+  geolocator: ^14.0.2
+  geocoding: ^5.0.0
+
+  # Saving and sharing a replayed drawing.
+  #
+  # The canvas is rasterised in-process with RenderRepaintBoundary.toImage, so
+  # nothing here touches the network or the drawing itself -- this only hands
+  # the resulting PNG to the platform's own share sheet, which is also how a
+  # player saves it (Save to Photos / Save to Files are entries in that sheet).
+  # A dedicated gallery-writer plugin would need photo-library permission on
+  # both platforms to do what the share sheet already does without one.
+  share_plus: ^12.0.0
+
+  # A directory to write that PNG to before sharing it. Temporary files only;
+  # nothing here persists between runs.
+  path_provider: ^2.1.5
+
+  # Utilities
+  uuid: ^4.6.0
+  equatable: ^2.1.0
+  collection: ^1.19.1
+  firebase_core: ^4.14.0
+  firebase_auth: ^6.6.1
+  cloud_firestore: ^6.9.0
+  cloud_functions: ^6.4.0
+  firebase_storage: ^13.5.0
+  firebase_app_check: ^0.4.7
+  firebase_analytics: ^12.5.0
+  firebase_crashlytics: ^5.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/words/
+    - assets/sounds/
+
+  fonts:
+    - family: PatrickHand
+      fonts:
+        - asset: assets/fonts/PatrickHand-Regular.ttf
+          weight: 400
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
+
+# ---------------------------------------------------------------------------
+# firebase_core 4.14.0 pulls firebase_core_web 3.11.0, which does
+#   catch (e) { if (!e.isA<JSObject>()) ... }
+# `isA` is declared on `JSAny?`, but a catch clause binds `Object`, so this
+# does not compile against the Dart 3.11.5 SDK in Flutter 3.41.7. Web builds
+# only -- Android never hit it.
+#
+# 3.10.0 is the last version without that call. The one behaviour it lacks is
+# 3.11.0's App Check fix for *named* Firebase apps (#18556); this app only ever
+# calls Firebase.initializeApp() for the default app, so that does not apply.
+#
+# Remove this override once Flutter is upgraded to an SDK that compiles 3.11.0.
+# ---------------------------------------------------------------------------
+dependency_overrides:
+  firebase_core_web: 3.10.0

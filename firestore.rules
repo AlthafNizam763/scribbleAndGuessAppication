@@ -1,0 +1,209 @@
+rules_version = '2';
+
+// Scribble & Guess — Firestore security rules.
+//
+// Guiding principle (§50): the client may state intentions, never facts.
+// Everything that decides the outcome of a game — scores, the drawer, the
+// answer, the timer, round status, bans — is written exclusively by Cloud
+// Functions running with admin credentials, which bypass these rules. So the
+// safe default here is: clients read what they are entitled to see, and write
+// almost nothing.
+//
+// Anything not matched by a rule below is denied by Firestore's default deny.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // A player is "in" a room when their player document exists.
+    function isRoomMember(roomId) {
+      return isSignedIn() && exists(
+        /databases/$(database)/documents/rooms/$(roomId)/players/$(request.auth.uid)
+      );
+    }
+
+    function roomData(roomId) {
+      return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+    }
+
+    function isRoomOwner(roomId) {
+      return isSignedIn() && roomData(roomId).ownerId == request.auth.uid;
+    }
+
+    // The set of fields an update actually changes.
+    function changed() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function onlyChanges(allowed) {
+      return changed().hasOnly(allowed);
+    }
+
+    function isNonEmptyString(value, maxLength) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= maxLength;
+    }
+
+    // Guards against a client writing a document large enough to be abusive.
+    function isReasonableSize(maxKeys) {
+      return request.resource.data.keys().size() <= maxKeys;
+    }
+
+    // ---------------------------------------------------------------------
+    // users/{userId} — the public profile
+    // ---------------------------------------------------------------------
+    //
+    // Readable by any signed-in user (names and avatars appear on the
+    // scoreboard). Writable only by its owner, and only the presentation
+    // fields: every statistic is aggregated server-side, so a client cannot
+    // inflate gamesWon or totalScore.
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSelf(userId)
+        && isReasonableSize(12)
+        && request.resource.data.userId == userId
+        && isNonEmptyString(request.resource.data.displayName, 20)
+        && request.resource.data.gamesPlayed == 0
+        && request.resource.data.gamesWon == 0
+        && request.resource.data.totalScore == 0;
+
+      allow update: if isSelf(userId)
+        && onlyChanges([
+             'displayName', 'avatarId', 'avatarColorIndex',
+             'photoUrl', 'updatedAt', 'lastSeenAt'
+           ])
+        && (!('displayName' in changed())
+            || isNonEmptyString(request.resource.data.displayName, 20));
+
+      // Profiles are never deleted by the client; account deletion is a
+      // server-side flow so the aggregates can be cleaned up with it.
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // rooms/{roomId} — the room itself
+    // ---------------------------------------------------------------------
+    //
+    // Members read it and nobody writes it. Creation, settings changes,
+    // status transitions, drawer selection and the timer all go through
+    // callable functions.
+
+    match /rooms/{roomId} {
+      allow read: if isRoomMember(roomId) || isRoomOwner(roomId);
+      allow create, update, delete: if false;
+
+      // -------------------------------------------------------------------
+      // players/{userId} — one document per member
+      // -------------------------------------------------------------------
+      //
+      // Members see each other. The only field a player may touch on their
+      // own document is the presence heartbeat; score, correctGuesses,
+      // hasGuessedCorrectly, isMuted and isReady are server-owned. (isReady
+      // is set through updateReadyStatus so the lobby cannot be raced.)
+
+      match /players/{userId} {
+        allow read: if isRoomMember(roomId);
+
+        allow update: if isSelf(userId)
+          && isRoomMember(roomId)
+          && onlyChanges(['lastSeenAt', 'isConnected']);
+
+        allow create, delete: if false;
+      }
+
+      // -------------------------------------------------------------------
+      // messages/{messageId} — chat and guesses
+      // -------------------------------------------------------------------
+      //
+      // Read-only for members. Messages are written by the sendMessage and
+      // submitGuess callables, which apply rate limiting, mute checks,
+      // profanity filtering and — critically — decide whether a message is a
+      // guess that must be hidden from other players.
+
+      match /messages/{messageId} {
+        allow read: if isRoomMember(roomId);
+        allow create, update, delete: if false;
+      }
+
+      // -------------------------------------------------------------------
+      // rounds/{roundNumber} — the public record of a finished round
+      // -------------------------------------------------------------------
+
+      match /rounds/{roundNumber} {
+        allow read: if isRoomMember(roomId);
+        allow write: if false;
+      }
+
+      // -------------------------------------------------------------------
+      // secret/{roundNumber} — THE ANSWER (§18)
+      // -------------------------------------------------------------------
+      //
+      // Denied to every client, including the drawer and the room owner.
+      // The drawer learns their word choices from the selectWord/startGame
+      // callable responses, never by reading Firestore, so there is no path
+      // by which a guesser's client can obtain the answer.
+
+      match /secret/{document=**} {
+        allow read, write: if false;
+      }
+
+      // -------------------------------------------------------------------
+      // votes/{targetUserId} — vote-kick ballots
+      // -------------------------------------------------------------------
+      //
+      // Visible so the UI can show a tally; cast through the voteKick
+      // callable, which enforces one vote per player.
+
+      match /votes/{targetUserId} {
+        allow read: if isRoomMember(roomId);
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // words/{wordId} — the word bank
+    // ---------------------------------------------------------------------
+    //
+    // Never readable by a client: being able to enumerate the bank would let a
+    // determined player narrow the answer from the masked length alone. Words
+    // reach the drawer only as the choices returned by a callable.
+
+    match /words/{wordId} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // leaderboard/{userId} — aggregated all-time standings
+    // ---------------------------------------------------------------------
+
+    match /leaderboard/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // reports/{reportId} — moderation reports
+    // ---------------------------------------------------------------------
+    //
+    // Write-only from the client's perspective, and even that goes through the
+    // reportPlayer callable. Reads are for admins via the console/backend.
+
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+  }
+}

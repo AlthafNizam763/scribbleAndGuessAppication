@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// Scribble & Guess — Cloud Storage security rules.
+//
+// The only user-supplied binary in the product is a profile avatar (§52).
+// Everything else the game draws is vector strokes over the realtime
+// transport, so there is deliberately no other writable path here.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+
+    function isUnderSizeLimit() {
+      return request.resource.size <= 2 * 1024 * 1024;
+    }
+
+    // -----------------------------------------------------------------
+    // users/{userId}/avatar/avatar.jpg
+    // -----------------------------------------------------------------
+    //
+    // Any signed-in player may read an avatar — they appear on the lobby and
+    // scoreboard. Only the owner may write one, and only at the exact path,
+    // with a checked content type and size, so the bucket cannot be used as
+    // free general-purpose hosting.
+
+    match /users/{userId}/avatar/avatar.jpg {
+      allow read: if isSignedIn();
+      allow write: if isSelf(userId) && isImage() && isUnderSizeLimit();
+      allow delete: if isSelf(userId);
+    }
+
+    // Everything else is denied, including other paths under users/.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

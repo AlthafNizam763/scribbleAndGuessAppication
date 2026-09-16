@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Scribble & Guess (dev, real Firebase)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=FLAVOR=development",
+        "--dart-define=USE_FIREBASE_EMULATORS=false"
+      ]
+    },
+    {
+      "name": "Scribble & Guess (dev, emulators — Android emulator only)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=FLAVOR=development",
+        "--dart-define=USE_FIREBASE_EMULATORS=true"
+      ]
+    },
+    {
+      "name": "Scribble & Guess (dev, emulators over LAN — physical device)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=FLAVOR=development",
+        "--dart-define=USE_FIREBASE_EMULATORS=true",
+        "--dart-define=EMULATOR_HOST=192.168.1.5"
+      ]
+    },
+    {
+      "name": "Scribble & Guess (production)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "release",
+      "args": ["--dart-define=FLAVOR=production"]
+    }
+  ]
+}

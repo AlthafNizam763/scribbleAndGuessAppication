@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated art; see tool/generate_brand_assets.dart. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Paper, edge to edge: the launcher crops this to its own shape. -->
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <!-- Android 13 themed icons read only this layer's alpha and tint it
+         themselves, so the mark is laid down flat black. Ignored below 33. -->
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Needed as its own bucket: on a dark-mode device running Android 12+,
+         values-v31 outranks values-night, so without this the launch would
+         come up light. Same splash attributes, dark parent. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+    </style>
+</resources>

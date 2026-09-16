@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "669548706857",
+    "project_id": "scribbleguess-33e76",
+    "storage_bucket": "scribbleguess-33e76.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:669548706857:android:817cc63ec35f4b3c1d3038",
+        "android_client_info": {
+          "package_name": "com.scribbleguess.scribble_guess"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6SESgxEDCBfqrqLU8T_GDNA7F4TW3vms"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

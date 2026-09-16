@@ -1,0 +1,41 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+  errors:
+    invalid_annotation_target: ignore
+    todo: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "build/**"
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_empty_else
+    - avoid_print
+    - avoid_relative_lib_imports
+    - avoid_returning_null_for_void
+    - avoid_unused_constructor_parameters
+    - await_only_futures
+    - camel_case_types
+    - cancel_subscriptions
+    - close_sinks
+    - directives_ordering
+    - empty_catches
+    - null_closures
+    - prefer_const_constructors
+    - prefer_const_constructors_in_immutables
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - prefer_final_fields
+    - prefer_final_locals
+    - prefer_single_quotes
+    - sort_child_properties_last
+    - unawaited_futures
+    - unnecessary_await_in_return
+    - unnecessary_lambdas
+    - unnecessary_parenthesis
+    - use_super_parameters

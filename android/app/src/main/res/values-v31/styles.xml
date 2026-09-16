@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From Android 12 the system draws the splash itself and ignores
+         windowBackground entirely, so the branding has to be restated through
+         these attributes or the launch reverts to a bare white screen with the
+         launcher icon on it.
+
+         Only LaunchTheme is redefined here; NormalTheme still resolves from
+         values/styles.xml. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <!-- The adaptive foreground already sits inside the mask's safe zone,
+             which is exactly what this slot needs. -->
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+    </style>
+</resources>
