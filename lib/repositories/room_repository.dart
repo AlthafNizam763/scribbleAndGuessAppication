@@ -66,6 +66,31 @@ abstract interface class RoomRepository {
   /// [AppErrorCode.banned], plus the usual transport codes.
   Future<Result<Room>> joinRoom(String code, PlayerProfile profile);
 
+  /// Accepts the invitation [invitationId] and enters the room it names.
+  ///
+  /// ## Why this is one call and not an accept followed by a join
+  ///
+  /// Because the two halves cannot be made to fail together. Accepting spends
+  /// the invitation — it is a single-use row with a concurrency guard on it —
+  /// so a join that fails afterwards leaves the player holding a seat in a
+  /// room they were never shown, with nothing left in the inbox to try again
+  /// with. Asking the server to do both means either the player is in the
+  /// room or the invitation is still theirs to accept, and never the state in
+  /// between.
+  ///
+  /// It also settles the "already in another room" question the same way a
+  /// join does — the previous seat is vacated rather than used as grounds for
+  /// a refusal — because both go through the same handler.
+  ///
+  /// Fails with [AppErrorCode.invalidAction] for an invitation that has
+  /// expired or been answered, [AppErrorCode.roomNotFound],
+  /// [AppErrorCode.roomFull], [AppErrorCode.gameInProgress] or
+  /// [AppErrorCode.banned], plus the usual transport codes.
+  Future<Result<Room>> acceptInvitation(
+    String invitationId,
+    PlayerProfile profile,
+  );
+
   /// Leaves the current room.
   ///
   /// Succeeds (as a no-op) when no room is joined, so screens can call it

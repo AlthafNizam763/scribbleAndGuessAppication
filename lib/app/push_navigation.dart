@@ -114,6 +114,25 @@ class _PushNavigationListenerState
           );
         }
 
+      case PushKind.roomInvitation:
+        AppLogger.i('[FCM] opening invitations for ${message.invitationId}');
+
+        // The inbox, not the room. Deliberately, and for the same reason the
+        // tournament case opens a screen rather than checking in: the payload
+        // was written when the invitation was sent and says nothing about
+        // whether the room still has space, has started, or exists. The inbox
+        // re-reads over REST and draws whatever is true now — including
+        // nothing at all, when the invitation has since lapsed.
+        //
+        // `go` rather than `push`: a notification tap is the player choosing
+        // where to be, and stacking the inbox on top of whatever was open
+        // would leave them backing into a screen they had already left.
+        navigator.goNamed(AppRoutes.roomInvitations);
+
+        // The list re-reads itself, so the badge and the rows are right even
+        // when this arrived while the app was alive and the socket was not.
+        ref.read(roomInvitationsProvider.notifier).refresh();
+
       case PushKind.unknown:
         // A kind this build has never heard of. The server is free to start
         // sending a new one before every installed app can act on it, and the

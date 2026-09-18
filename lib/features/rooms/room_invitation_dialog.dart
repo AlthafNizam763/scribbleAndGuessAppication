@@ -80,10 +80,17 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
         // it on. The server's own sentence: `Room is full`, `Game already
         // started`, `Invitation expired`.
         notify(context, failure.message, isError: true);
-        // The invitation is spent either way — accepted and refused, or
-        // already lapsed — so the card goes rather than sitting there offering
-        // a button that will fail again.
-        widget.onAnswered?.call();
+
+        // A connection that never came up spent nothing: the accept is one
+        // server call made *over* the socket, so failing to open one leaves
+        // the invitation exactly as it was. The card stays, and its own button
+        // is the retry — which is the whole point of doing it in that order.
+        //
+        // Every other refusal is the server's verdict on the invitation
+        // itself, and it will give the same verdict to the same tap, so the
+        // card goes rather than sitting there offering a button that cannot
+        // work.
+        if (!failure.code.isRetryable) widget.onAnswered?.call();
     }
   }
 

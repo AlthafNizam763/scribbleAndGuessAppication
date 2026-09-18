@@ -28,6 +28,16 @@ enum PushKind {
   /// A tournament this player registered for has opened check-in.
   tournamentCheckInOpen('TOURNAMENT_CHECKIN_OPEN'),
 
+  /// A friend has asked this player into a room.
+  ///
+  /// The only delivery path an invitation has to a player who is not already
+  /// playing: the socket is opened when the app enters a room and at no other
+  /// time, so `s:room:invitationReceived` reaches somebody mid-game and nobody
+  /// else. A tap opens the inbox, which re-reads over REST — it does not
+  /// accept, because an invitation that was good when it was sent may not be
+  /// by the time it is read, and only the accept call can decide that.
+  roomInvitation('ROOM_INVITATION'),
+
   /// A kind this build does not know. Opens the app and stops there.
   unknown('');
 
@@ -54,6 +64,8 @@ class PushMessage extends Equatable {
   const PushMessage({
     this.kind = PushKind.unknown,
     this.tournamentId = '',
+    this.invitationId = '',
+    this.roomCode = '',
     this.route = '',
   });
 
@@ -61,6 +73,8 @@ class PushMessage extends Equatable {
   factory PushMessage.fromData(Map<String, dynamic> data) => PushMessage(
         kind: PushKind.parse(data['type']),
         tournamentId: asString(data['tournamentId']),
+        invitationId: asString(data['invitationId']),
+        roomCode: asString(data['roomCode']),
         route: asString(data['route']),
       );
 
@@ -69,6 +83,16 @@ class PushMessage extends Equatable {
 
   /// Which tournament, when the kind concerns one. May be empty.
   final String tournamentId;
+
+  /// Which invitation, when the kind concerns one. May be empty.
+  ///
+  /// An id, not a permission: it names the row the inbox should highlight and
+  /// is never treated as evidence the invitation is still good.
+  final String invitationId;
+
+  /// The room an invitation names, for the notification's own identity. May be
+  /// empty.
+  final String roomCode;
 
   /// The destination the server suggested, as a path. May be empty.
   ///
@@ -84,8 +108,12 @@ class PushMessage extends Equatable {
   /// Whether this names a tournament the app can open.
   bool get hasTournament => tournamentId.isNotEmpty;
 
+  /// Whether this names an invitation the app can open.
+  bool get hasInvitation => invitationId.isNotEmpty;
+
   @override
-  List<Object?> get props => <Object?>[kind, tournamentId, route];
+  List<Object?> get props =>
+      <Object?>[kind, tournamentId, invitationId, roomCode, route];
 
   @override
   bool get stringify => true;

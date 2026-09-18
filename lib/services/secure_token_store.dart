@@ -49,21 +49,37 @@ class SecureTokenStore {
   /// runs at most once per launch rather than on every token read.
   bool _migrated = false;
 
+  /// The last token read or written, so the common case costs no platform call.
+  ///
+  /// This is a read-through cache of a value only this class writes, which is
+  /// what makes it safe: [write] replaces it and [delete] clears it, so it
+  /// cannot go stale behind the keystore's back.
+  ///
+  /// It matters because every authenticated REST request now asks for the
+  /// token, and on Android each ask is a platform-channel round trip into
+  /// EncryptedSharedPreferences — which on a handset whose keystore entry did
+  /// not survive a reinstall is a *throwing* round trip, logged in full, once
+  /// per request. Remembering the answer turns that into one call per launch.
+  String? _cached;
+
   /// The stored token, or `null` when this device has no session.
   Future<String?> read() async {
+    final String? cached = _cached;
+    if (cached != null && cached.isNotEmpty) return cached;
+
     await _migrateFromPreferences();
 
     try {
       final String? token = await _storage.read(key: StorageKeys.authToken);
-      if (token != null && token.isNotEmpty) return token;
+      if (token != null && token.isNotEmpty) return _cached = token;
     } on Object catch (error, stackTrace) {
       AppLogger.w('SecureTokenStore: read failed', error, stackTrace);
-      return _fallback.readString(StorageKeys.authToken);
+      return _cached = _fallback.readString(StorageKeys.authToken);
     }
 
     // Nothing in the keystore. A value may still be sitting in preferences if
     // a previous write had to fall back.
-    return _fallback.readString(StorageKeys.authToken);
+    return _cached = _fallback.readString(StorageKeys.authToken);
   }
 
   /// Stores [token], replacing any previous one.
@@ -72,6 +88,10 @@ class SecureTokenStore {
       await delete();
       return;
     }
+
+    // Before the write rather than after it, so the cache is correct even on
+    // the fallback path below.
+    _cached = token;
 
     try {
       await _storage.write(key: StorageKeys.authToken, value: token);
@@ -91,6 +111,10 @@ class SecureTokenStore {
 
   /// Forgets the token on this device, from both stores.
   Future<void> delete() async {
+    // First, so a sign-out that fails against the keystore still stops this
+    // process handing the old token to the next request.
+    _cached = null;
+
     try {
       await _storage.delete(key: StorageKeys.authToken);
     } on Object catch (error, stackTrace) {

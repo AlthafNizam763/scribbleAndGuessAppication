@@ -63,6 +63,25 @@ enum AppErrorCode {
   /// peer connection rather than retrying.
   drawerVoiceDisabled;
 
+  /// Whether the server never got as far as deciding anything.
+  ///
+  /// The distinction is "was the action refused, or did it never happen" — not
+  /// "is this error the player's fault". It matters wherever a failed action
+  /// leaves something on screen that can be tapped again: a `Room is full` is
+  /// a verdict and will be the same verdict next time, while a connection that
+  /// never came up has decided nothing and is worth another tap. The
+  /// invitation card uses exactly this to choose between dismissing itself and
+  /// staying put as its own retry.
+  ///
+  /// [serverError] is included because `RoomController._diagnose` reports a
+  /// reachable-but-broken backend under it, and because a request that died
+  /// inside the server is as undecided as one that never arrived.
+  bool get isRetryable =>
+      this == AppErrorCode.network ||
+      this == AppErrorCode.timeout ||
+      this == AppErrorCode.connectionLost ||
+      this == AppErrorCode.serverError;
+
   /// Parses a serialized code, falling back to [AppErrorCode.unknown].
   static AppErrorCode fromName(String? value) {
     for (final AppErrorCode code in AppErrorCode.values) {

@@ -23,10 +23,29 @@ import 'package:scribble_guess/services/secure_token_store.dart';
 /// must not keep talking to the old origin while the socket moves to the new
 /// one. The token source is read lazily on every request, because the session
 /// is established asynchronously after the first frame.
+///
+/// ## Why the token comes from the store and not from [authServiceProvider]
+///
+/// Because asking the service for it is a dependency cycle, and Riverpod says
+/// so out loud: this client is what [AuthApi] posts through, [AuthService] is
+/// built from that api, and reading the service from here closes the loop —
+/// `apiClient -> authService -> authApi -> apiClient`. The assert fires on the
+/// first authenticated request, as a `CircularDependencyError` thrown out of
+/// `_send`, which meant every authenticated REST call in a debug build failed
+/// before it reached the network. Device registration was the visible
+/// casualty: `registerToken` threw on every launch, no handset was ever
+/// recorded against the account, and an invitation push therefore had nowhere
+/// to go even once the server was sending them.
+///
+/// Reading [secureTokenStoreProvider] instead is not a workaround, it is the
+/// honest dependency. The token is *data*, and the store is where it lives:
+/// `AuthService` writes every session's token there before adopting it, so the
+/// store always holds whatever `idToken()` would have returned. The store
+/// depends only on preferences, so nothing here can loop.
 final Provider<ApiClient> apiClientProvider = Provider<ApiClient>((Ref ref) {
   final ApiClient client = ApiClient(
     baseUrl: ref.watch(apiBaseUrlProvider),
-    tokenSource: () => ref.read(authServiceProvider).idToken(),
+    tokenSource: () => ref.read(secureTokenStoreProvider).read(),
   );
   ref.onDispose(client.dispose);
   return client;

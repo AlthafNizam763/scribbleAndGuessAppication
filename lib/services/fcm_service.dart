@@ -197,9 +197,15 @@ class FcmService {
         return null;
       }
 
-      return _sendToBackend(token, reason: 'startup');
+      // Awaited, not just returned. `return f()` hands the future back and
+      // completes the `try` immediately, so a failure inside `_sendToBackend`
+      // lands *outside* this catch and surfaces as an unhandled exception from
+      // the splash screen — which is exactly how a broken registration
+      // presented itself: a red error in the log, no token on the server, and
+      // a `catch` sitting right there that never ran.
+      return await _sendToBackend(token, reason: 'startup');
     } on Object catch (error, stack) {
-      AppLogger.w('[FCM] reading the device token failed', error, stack);
+      AppLogger.w('[FCM] registering the device token failed', error, stack);
       return null;
     }
   }

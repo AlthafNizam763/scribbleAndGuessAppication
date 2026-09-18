@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scribble_guess/models/app_notification.dart';
 import 'package:scribble_guess/models/push_message.dart';
+import 'package:scribble_guess/routes/route_names.dart';
 
 /// The push payload, and what the app does with a malformed one.
 ///
@@ -77,6 +78,54 @@ void main() {
 
       expect(message.kind, PushKind.unknown);
       expect(message.hasTournament, isFalse);
+    });
+
+    test('parses the room invitation the server sends', () {
+      // Pinned against `PUSH_NOTIFICATION_TYPE.roomInvitation` and the payload
+      // `invitation.service.ts` builds. This is the only delivery path an
+      // invitation has to a player who is not already in a room, so a drift
+      // here is the whole feature silently doing nothing.
+      final PushMessage message = PushMessage.fromData(const <String, dynamic>{
+        'type': 'ROOM_INVITATION',
+        'invitationId': '507f1f77bcf86cd7994390ff',
+        'roomCode': 'A7K9P',
+        'route': '/rooms/invitations',
+      });
+
+      expect(message.kind, PushKind.roomInvitation);
+      expect(message.invitationId, '507f1f77bcf86cd7994390ff');
+      expect(message.roomCode, 'A7K9P');
+      expect(message.hasInvitation, isTrue);
+      expect(message.isEmpty, isFalse);
+    });
+
+    test('matches the inbox row the same invitation writes', () {
+      // Same argument as the check-in above: one call site writes both, and a
+      // build that understood only one of them would show a notification with
+      // no destination or a destination with no notification.
+      expect(
+        NotificationKind.parse('room_invitation'),
+        NotificationKind.roomInvitation,
+      );
+    });
+
+    test('the invitation route matches the screen the app actually has', () {
+      // The server sends this as advice; the client decides. Pinned so the two
+      // cannot drift into naming different screens.
+      expect(AppRoutes.roomInvitationsPath, '/rooms/invitations');
+    });
+
+    test('opens the inbox for an invitation that named no id', () {
+      final PushMessage message = PushMessage.fromData(const <String, dynamic>{
+        'type': 'ROOM_INVITATION',
+        'route': '/rooms/invitations',
+      });
+
+      // The kind is known, so the inbox still opens and re-reads over REST —
+      // which is where the real answer was always going to come from.
+      expect(message.kind, PushKind.roomInvitation);
+      expect(message.hasInvitation, isFalse);
+      expect(message.isEmpty, isFalse);
     });
 
     test('reports a check-in with no id as unusable for navigation', () {

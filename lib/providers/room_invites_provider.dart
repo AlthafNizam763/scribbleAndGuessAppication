@@ -341,28 +341,66 @@ class RoomInviteActions {
   /// Returns the room the player ended up in, so the caller can navigate on
   /// success and show the server's own message on failure — `Room is full`,
   /// `Game already started`, `Invitation expired`.
+  ///
+  /// ## Why the connection comes first, and why there is only one server call
+  ///
+  /// This used to be two calls: `POST /rooms/invitations/:id/accept` to seat
+  /// the account, then a socket join to seat the connection. That ordering is
+  /// what made accepting fail on the first attempt, in two separate ways.
+  ///
+  /// The first is that the REST call spends the invitation before the socket
+  /// has been proved to work. An invitation row is single-use and guarded, so
+  /// once it is accepted there is nothing left to retry with: a socket that
+  /// then failed to open — a cold realtime host, a handover, a dead spot —
+  /// left the player seated in a room they had never been shown, with the card
+  /// already gone from their inbox. The only way back in was a room code they
+  /// had no way to read.
+  ///
+  /// The second is that the two transports disagreed about what "you are
+  /// already in a room" meant. A seat outlives the connection that took it by
+  /// the reconnect grace, so an app that was backgrounded or killed rather
+  /// than left through the Leave button holds one for another forty-five
+  /// seconds; the socket path vacates such a seat, and the REST path refused
+  /// the accept outright with a message naming a room the player had already
+  /// left. Waiting it out was the "try again" in the report. That half is
+  /// fixed on the server as well — both paths now agree — but this path no
+  /// longer depends on it.
+  ///
+  /// So: establish the session and the socket first, and then make exactly one
+  /// call that accepts, vacates any abandoned seat, takes the seat and enters
+  /// the room. Either the player is in the room, or the invitation is still
+  /// theirs to tap again. There is no state in between, and no delay anywhere.
   Future<Result<Room>> accept(RoomInvitation invitation) async {
     final PlayerProfile? profile = _ref.read(profileProvider);
     if (profile == null) return const Err<Room>(_noProfile);
 
-    final Result<String> seated = await _api.acceptInvitation(invitation.id);
+    // Before anything is spent. A connection that cannot be established is
+    // reported as the connection failure it is, and the invitation stays in
+    // the inbox for the player to try again — which is what makes the retry
+    // the card offers actually mean something.
+    final Result<void> ready =
+        await _ref.read(roomControllerProvider).prepare(profile);
 
-    if (seated case Err<String>(:final Failure failure)) {
-      // The invitation is spent either way — expired, already answered, or
-      // pointing at a room that has gone — so it comes off the inbox rather
-      // than sitting there offering a button that will fail again.
-      unawaited(_ref.read(roomInvitationsProvider.notifier).refresh());
+    if (ready case Err<void>(:final Failure failure)) {
       return Err<Room>(failure);
     }
 
-    _ref.read(roomInvitationsProvider.notifier).forget(invitation.id);
+    final Result<Room> entered = await _ref
+        .read(roomRepositoryProvider)
+        .acceptInvitation(invitation.id, profile);
 
-    final String code = seated.valueOrNull ?? invitation.roomCode;
+    switch (entered) {
+      case Ok<Room>():
+        _ref.read(roomInvitationsProvider.notifier).forget(invitation.id);
+      case Err<Room>():
+        // The server refused. Whether the invitation survived that refusal is
+        // its decision, not a guess this can make — an expired row is gone
+        // while a full room leaves the invitation standing — so the inbox is
+        // re-read rather than edited.
+        unawaited(_ref.read(roomInvitationsProvider.notifier).refresh());
+    }
 
-    // The account holds the seat; this is what puts the *connection* in the
-    // room. The server recognises a returning member, so this is a rejoin
-    // rather than a second seat.
-    return _ref.read(roomControllerProvider).joinRoom(code);
+    return entered;
   }
 
   /// Declines an invitation. The player stays where they are.
@@ -377,22 +415,22 @@ class RoomInviteActions {
 
   /// Joins a public room and enters its lobby.
   ///
-  /// The REST call is what re-validates the room: the browser row it came from
-  /// is a snapshot, and a room that had space when the list was drawn may not
-  /// now. Its refusal carries the message the player should read.
+  /// The socket first, for the same reason as [accept]: the room call that
+  /// matters is the socket one — REST can seat an account but not a
+  /// connection — so opening the connection before anything is written means a
+  /// failure to connect leaves the player exactly where they were rather than
+  /// seated in a room they were never shown.
+  ///
+  /// The join itself then goes over the socket, which is the single call that
+  /// re-validates the room, vacates any seat left behind by a killed app and
+  /// enters the lobby. The browser row it came from is only a snapshot: a room
+  /// that had space when the list was drawn may not now, and the server's
+  /// refusal carries the message the player should read.
   Future<Result<Room>> joinPublic(PublicRoom room) async {
     final PlayerProfile? profile = _ref.read(profileProvider);
     if (profile == null) return const Err<Room>(_noProfile);
 
-    final Result<String> seated = await _api.join(room.id);
-
-    if (seated case Err<String>(:final Failure failure)) {
-      return Err<Room>(failure);
-    }
-
-    return _ref
-        .read(roomControllerProvider)
-        .joinRoom(seated.valueOrNull ?? room.code);
+    return _ref.read(roomControllerProvider).joinRoom(room.code);
   }
 
   /// Re-reads the invite sheet for [roomId], marking [friendId] invited first.

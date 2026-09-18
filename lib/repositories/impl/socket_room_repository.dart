@@ -101,6 +101,30 @@ class SocketRoomRepository implements RoomRepository {
   }
 
   @override
+  Future<Result<Room>> acceptInvitation(
+    String invitationId,
+    PlayerProfile profile,
+  ) async {
+    if (invitationId.trim().isEmpty) {
+      return const Err<Room>(
+        Failure(AppErrorCode.invalidAction, AppStrings.errorInvalidAction),
+      );
+    }
+    // The profile travels for the same reason it does on join: the seat is cut
+    // from what the server has on file, and the lobby would otherwise render
+    // the name the account was created under rather than the one this device
+    // is showing.
+    final Result<Map<String, dynamic>> ack = await _gateway.request(
+      SocketEvents.clientRoomInviteAccept,
+      <String, dynamic>{
+        'invitationId': invitationId.trim(),
+        'profile': profile.toJson(),
+      },
+    );
+    return _roomFromAck(ack, 'invitation accept');
+  }
+
+  @override
   Future<Result<void>> leaveRoom() async {
     if (_room == null) {
       return const Ok<void>(null);

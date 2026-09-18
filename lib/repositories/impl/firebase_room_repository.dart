@@ -81,6 +81,24 @@ class FirebaseRoomRepository implements RoomRepository {
   }
 
   @override
+  Future<Result<Room>> acceptInvitation(
+    String invitationId,
+    PlayerProfile profile,
+  ) async {
+    // Room invitations are a Node-backend feature: the invitation row, its
+    // expiry and the accept's concurrency guard all live there, and this
+    // implementation predates them. Refused rather than faked, because the
+    // only honest alternative would be to join by a code this layer has no way
+    // to look up.
+    return const Err<Room>(
+      Failure(
+        AppErrorCode.invalidAction,
+        'Invitations need the game server.',
+      ),
+    );
+  }
+
+  @override
   Future<Result<void>> leaveRoom() async {
     final String? roomId = _roomId;
     if (roomId == null) return const Ok<void>(null);
