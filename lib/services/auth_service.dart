@@ -71,10 +71,11 @@ class AuthService {
 
   /// Whether this session is a guest rather than a linked account.
   ///
-  /// Always true today: the backend only issues guest sessions. It is kept so
-  /// the "you are playing as a guest" affordances in the profile screen do not
-  /// have to change when Google, Apple and email sign-in are added.
-  bool get isAnonymous => true;
+  /// Read from the provider the *server* reports on every auth response, so a
+  /// session resumed from a stored token reports what the account actually is
+  /// rather than what this device last assumed. No session is treated as a
+  /// guest, since every affordance this turns on is an offer to sign up.
+  bool get isAnonymous => _session?.isGuest ?? true;
 
   /// Emits on sign-in and sign-out, replaying the current value first.
   ///
@@ -136,6 +137,104 @@ class AuthService {
     };
   }
 
+  /// Resumes a stored session, without creating an account if there is none.
+  ///
+  /// This is what the splash screen calls now that sign-in is a gate. The
+  /// distinction from [ensureSession] is the whole point: that method's job is
+  /// "there must be a session, invent one if necessary", which is exactly what
+  /// a login screen must *not* do — a device arriving with no stored token has
+  /// a person to ask, not a guest account to mint behind their back.
+  ///
+  /// Returns the resumed session, or null when the player must sign in.
+  /// Throws nothing: a network failure is reported through [offline] so the
+  /// splash can offer a retry rather than dumping somebody at a login form
+  /// they cannot complete.
+  Future<({AuthSession? session, bool offline})> resumeSession() async {
+    final AuthSession? existing = _session;
+    if (existing != null && existing.isValid) {
+      return (session: existing, offline: false);
+    }
+
+    final String? stored = await _tokens.read();
+    if (stored == null || stored.isEmpty) {
+      return (session: null, offline: false);
+    }
+
+    final Result<AuthSession> revalidated = await _api.session(stored);
+
+    if (revalidated case Ok<AuthSession>(:final AuthSession value)) {
+      _adopt(value);
+      AppLogger.i('AuthService: resumed session for ${value.profile.id}');
+      unawaited(_reconcile(value, null));
+      return (session: value, offline: false);
+    }
+
+    if (revalidated case Err<AuthSession>(:final Failure failure)) {
+      // A network failure is temporary and must not cost the player their
+      // account, nor push them to a login form that cannot reach the server.
+      if (failure.code == AppErrorCode.network ||
+          failure.code == AppErrorCode.timeout) {
+        AppLogger.w('AuthService: could not reach the server to resume');
+        return (session: null, offline: true);
+      }
+      AppLogger.w('AuthService: stored token rejected; sign-in required');
+      await _tokens.delete();
+    }
+
+    return (session: null, offline: false);
+  }
+
+  /// Signs in with an email and password.
+  Future<Result<AuthSession>> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final Result<AuthSession> result =
+        await _api.login(email: email, password: password);
+    return _keep(result, 'signed in as');
+  }
+
+  /// Registers an email account, upgrading this device's guest if it has one.
+  ///
+  /// [username] names a brand-new account. On the upgrade path the server
+  /// keeps the name the guest already chose and ignores it.
+  Future<Result<AuthSession>> registerWithEmail({
+    required String email,
+    required String password,
+    String? username,
+    int? avatarId,
+    int? avatarColorIndex,
+  }) async {
+    final Result<AuthSession> result = await _api.register(
+      email: email,
+      password: password,
+      username: username,
+      avatarId: avatarId,
+      avatarColorIndex: avatarColorIndex,
+    );
+    return _keep(result, 'registered');
+  }
+
+  /// Creates a guest account and adopts it.
+  ///
+  /// The explicit form of what [ensureSession] used to do implicitly at
+  /// launch: now it happens only when somebody taps "Continue as guest".
+  Future<Result<AuthSession>> continueAsGuest({PlayerProfile? profile}) =>
+      ensureSession(profile: profile);
+
+  /// Stores and adopts a session from a successful auth call.
+  Future<Result<AuthSession>> _keep(
+    Result<AuthSession> result,
+    String verb,
+  ) async {
+    if (result case Ok<AuthSession>(:final AuthSession value)) {
+      await _tokens.write(value.token);
+      _adopt(value);
+      AppLogger.i('AuthService: $verb ${value.profile.id}');
+    }
+    return result;
+  }
+
   /// Replaces the local session's profile after a rename or restyle.
   ///
   /// The server is told too, so other players see the new name; a failure to
@@ -161,10 +260,40 @@ class AuthService {
   }
 
   /// Forgets the session on this device.
+  ///
+  /// The token goes first and is awaited: everything after it is best-effort
+  /// tidying, and a failure part-way through must still leave a device that
+  /// cannot authenticate. The other order would clear the *cache* and keep the
+  /// credential, which is the wrong half.
+  ///
+  /// The cached profile goes too. It is what the sign-in screen falls back to
+  /// when minting a guest, so leaving it behind would offer the next person to
+  /// pick up this phone the last person's name and face.
   Future<void> signOut() async {
     await _tokens.delete();
+    await _store.clearAll();
+
     _session = null;
     if (!_sessionController.isClosed) _sessionController.add(null);
+  }
+
+  /// Deletes this account on the server, then signs out.
+  ///
+  /// Irreversible, and ordered deliberately: the server call is awaited and
+  /// its failure is returned *before* anything local is cleared. Clearing
+  /// first would leave a player signed out of an account that still exists,
+  /// with no session left to retry the deletion with.
+  ///
+  /// On success the local teardown is unconditional. The account is gone, so
+  /// the token, the cached profile and the session stream are all describing
+  /// something that no longer exists, and the redirect guard needs the stream
+  /// to say so before it will let go of the authenticated screens.
+  Future<Result<void>> deleteAccount() async {
+    final Result<void> result = await _api.deleteAccount();
+    if (result case Err<void>()) return result;
+
+    await signOut();
+    return const Ok<void>(null);
   }
 
   /// Closes the session stream.

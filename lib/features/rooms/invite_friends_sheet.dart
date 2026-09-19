@@ -54,7 +54,7 @@ class InviteFriendsSheet extends ConsumerWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.sketch.paper,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSpacing.radiusLg),
@@ -69,7 +69,7 @@ class InviteFriendsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final AsyncValue<List<InviteCandidate>> candidates =
@@ -103,13 +103,13 @@ class InviteFriendsSheet extends ConsumerWidget {
                         children: <Widget>[
                           Text(
                             context.l10n.inviteSheetTitle,
-                            style: text.titleLarge?.copyWith(color: colors.ink),
+                            style: text.titleLarge?.copyWith(color: colors.text),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${context.l10n.inviteSheetSubtitle}  $roomCode',
                             style:
-                                text.bodySmall?.copyWith(color: colors.inkSoft),
+                                text.bodySmall?.copyWith(color: colors.textMuted),
                           ),
                         ],
                       ),
@@ -122,19 +122,19 @@ class InviteFriendsSheet extends ConsumerWidget {
                   ],
                 ),
               ),
-              Divider(color: colors.inkFaint, height: 1),
+              Divider(color: colors.textFaint, height: 1),
               Flexible(
                 child: candidates.when(
                   loading: () => const Padding(
                     padding: EdgeInsets.all(AppSpacing.xl),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: AppLoadingState(),
                   ),
-                  error: (Object error, StackTrace stack) => SketchEmptyState(
+                  error: (Object error, StackTrace stack) => AppEmptyState(
                     message: error is Failure
                         ? error.message
                         : context.l10n.errorUnknown,
                     icon: Icons.cloud_off_outlined,
-                    action: SketchButton(
+                    action: AppButton(
                       label: context.l10n.retry,
                       onPressed: () => ref
                           .read(inviteCandidatesProvider(roomId).notifier)
@@ -143,7 +143,7 @@ class InviteFriendsSheet extends ConsumerWidget {
                   ),
                   data: (List<InviteCandidate> rows) {
                     if (rows.isEmpty) {
-                      return SketchEmptyState(
+                      return AppEmptyState(
                         message: context.l10n.inviteNoFriends,
                         icon: Icons.group_outlined,
                       );
@@ -229,7 +229,7 @@ class _FriendInviteTileState extends ConsumerState<FriendInviteTile> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final InviteCandidate candidate = widget.candidate;
 
     return PlayerTile(
@@ -242,17 +242,17 @@ class _FriendInviteTileState extends ConsumerState<FriendInviteTile> {
         child: _PresenceDot(online: candidate.isOnline),
       ),
       trailing: switch (candidate) {
-        InviteCandidate(isMember: true) => SketchBadge(
+        InviteCandidate(isMember: true) => HudBadge(
             label: context.l10n.inviteJoined,
             icon: Icons.check,
             color: colors.success,
           ),
-        InviteCandidate(isInvited: true) => SketchBadge(
+        InviteCandidate(isInvited: true) => HudBadge(
             label: context.l10n.inviteSent,
             icon: Icons.schedule,
             color: colors.accentBlue,
           ),
-        InviteCandidate(canInvite: true) => SketchButton(
+        InviteCandidate(canInvite: true) => AppButton(
             label: context.l10n.inviteAction,
             icon: Icons.send_outlined,
             busy: _busy,
@@ -260,12 +260,12 @@ class _FriendInviteTileState extends ConsumerState<FriendInviteTile> {
           ),
         // Un-invitable for a reason the server named: the room is full, the
         // game started, they are banned from it.
-        _ => SketchBadge(
+        _ => HudBadge(
             label: candidate.blockedReason.isEmpty
                 ? context.l10n.inviteOffline
                 : candidate.blockedReason,
             icon: Icons.block_outlined,
-            color: colors.inkSoft,
+            color: colors.textMuted,
           ),
       },
     );
@@ -274,8 +274,8 @@ class _FriendInviteTileState extends ConsumerState<FriendInviteTile> {
 
 /// A small filled dot marking a friend as connected.
 ///
-/// Ink and paper rather than a colour of its own: the sketchbook has no green
-/// "online" light, and inventing one here would be the first pixel of a
+/// Drawn in the system's own success green rather than a presence colour
+/// invented for this one sheet — a second green would be the first pixel of a
 /// different app.
 class _PresenceDot extends StatelessWidget {
   const _PresenceDot({required this.online});
@@ -284,7 +284,7 @@ class _PresenceDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Semantics(
       label: online ? context.l10n.inviteOnline : context.l10n.inviteOffline,
@@ -295,8 +295,8 @@ class _PresenceDot extends StatelessWidget {
           shape: BoxShape.circle,
           color: online ? colors.success : Colors.transparent,
           border: Border.all(
-            color: online ? colors.success : colors.inkFaint,
-            width: 1.5,
+            color: online ? colors.success : colors.border,
+            width: AppSpacing.border,
           ),
         ),
       ),

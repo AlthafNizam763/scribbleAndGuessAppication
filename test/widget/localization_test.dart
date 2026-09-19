@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:scribble_guess/core/constants/app_strings.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/core/i18n/translations/ar.dart';
 import 'package:scribble_guess/core/i18n/translations/en.dart';
 import 'package:scribble_guess/core/i18n/translations/ml.dart';
-import 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
+import 'package:scribble_guess/core/widgets/app_scaffold.dart';
 import 'package:scribble_guess/models/enums.dart';
 
 /// The localisation wiring in `ScribbleGuessApp`.
@@ -152,18 +153,20 @@ void main() {
       ),
     );
 
-    expect(find.text('Scribble & Guess'), findsOneWidget);
+    // Named through AppStrings rather than spelled out, so a rebrand does not
+    // leave this test asserting the previous product's name.
+    expect(find.text(AppStrings.appName), findsOneWidget);
   });
 
   /// Error text is built where there is no context, so it travels as English
   /// and is translated by the widget that shows it.
-  testWidgets('SketchEmptyState localises an English failure message',
+  testWidgets('AppEmptyState localises an English failure message',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       appWith(
         AppLanguage.ml,
         child: Scaffold(
-          body: SketchEmptyState(message: enStrings['errorRoomFull']!),
+          body: AppEmptyState(message: enStrings['errorRoomFull']!),
         ),
       ),
     );

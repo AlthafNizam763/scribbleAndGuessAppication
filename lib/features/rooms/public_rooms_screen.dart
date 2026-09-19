@@ -37,26 +37,26 @@ class PublicRoomsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<PublicRoomPage> rooms = ref.watch(publicRoomsProvider);
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.publicRoomsTitle,
       padded: false,
       actions: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.refresh),
+        AppIconButton(
+          icon: Icons.refresh_rounded,
           tooltip: context.l10n.retry,
           onPressed: () => ref.read(publicRoomsProvider.notifier).refresh(),
         ),
       ],
       child: rooms.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.errorUnknown,
           icon: Icons.cloud_off_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: () => ref.read(publicRoomsProvider.notifier).refresh(),
           ),
@@ -69,7 +69,7 @@ class PublicRoomsScreen extends ConsumerWidget {
             children: <Widget>[
               Text(
                 context.l10n.publicRoomsSubtitle,
-                style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                style: text.bodySmall?.copyWith(color: colors.textMuted),
               ),
               const SizedBox(height: AppSpacing.md),
               if (page.isSeatedElsewhere) ...<Widget>[
@@ -81,7 +81,7 @@ class PublicRoomsScreen extends ConsumerWidget {
                   padding: EdgeInsets.only(
                     top: MediaQuery.sizeOf(context).height * 0.12,
                   ),
-                  child: SketchEmptyState(
+                  child: AppEmptyState(
                     message: context.l10n.publicRoomsEmpty,
                     icon: Icons.meeting_room_outlined,
                   ),
@@ -112,29 +112,28 @@ class _AlreadySeatedNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
-    return SketchCard(
-      borderColor: colors.ink,
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.info_outline, size: 18, color: colors.inkSoft),
+              Icon(Icons.info_outline, size: 18, color: colors.textMuted),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   context.l10n.publicRoomsLeaveFirst,
-                  style: text.bodySmall?.copyWith(color: colors.ink),
+                  style: text.bodySmall?.copyWith(color: colors.text),
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          SketchButton(
+          AppButton(
             label: '${context.l10n.publicRoomsBackToRoom} ($code)',
             icon: Icons.meeting_room_outlined,
             expand: true,
@@ -184,11 +183,11 @@ class _PublicRoomCardState extends ConsumerState<PublicRoomCard> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final PublicRoom room = widget.room;
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -203,13 +202,13 @@ class _PublicRoomCardState extends ConsumerState<PublicRoomCard> {
                     Text(
                       room.name,
                       overflow: TextOverflow.ellipsis,
-                      style: text.titleMedium?.copyWith(color: colors.ink),
+                      style: text.titleMedium?.copyWith(color: colors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${context.l10n.publicRoomsHostedBy} ${room.hostName}',
                       overflow: TextOverflow.ellipsis,
-                      style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
                     ),
                   ],
                 ),
@@ -218,7 +217,7 @@ class _PublicRoomCardState extends ConsumerState<PublicRoomCard> {
               Text(
                 room.code,
                 style: text.titleSmall?.copyWith(
-                  color: colors.inkSoft,
+                  color: colors.textMuted,
                   letterSpacing: 3,
                 ),
               ),
@@ -229,36 +228,36 @@ class _PublicRoomCardState extends ConsumerState<PublicRoomCard> {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: <Widget>[
-              SketchBadge(
+              HudBadge(
                 label: room.occupancy,
                 icon: Icons.group_outlined,
                 color: room.freeSeats <= 1
                     ? colors.accentOrange
                     : colors.accentGreen,
               ),
-              SketchBadge(
+              HudBadge(
                 label: room.status.label,
                 icon: Icons.schedule,
                 color: colors.accentBlue,
               ),
-              SketchBadge(
+              HudBadge(
                 label: '${room.rounds} rounds',
                 icon: Icons.repeat,
-                color: colors.inkSoft,
+                color: colors.textMuted,
               ),
-              SketchBadge(
+              HudBadge(
                 label: '${room.drawTimeSeconds}s',
                 icon: Icons.timer_outlined,
-                color: colors.inkSoft,
+                color: colors.textMuted,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          SketchButton(
+          AppButton(
             label: context.l10n.publicRoomsJoin,
             icon: Icons.login,
             expand: true,
-            variant: SketchButtonVariant.primary,
+            variant: AppButtonVariant.primary,
             busy: _busy,
             onPressed: _busy ? null : _join,
           ),

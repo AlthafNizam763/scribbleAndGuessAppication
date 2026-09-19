@@ -85,13 +85,13 @@ scribble_and_guess/
 │   │   ├── errors/             AppException + the closed Failure vocabulary
 │   │   ├── rules/              pure game logic (mirrors functions/, for prediction)
 │   │   ├── utils/              validators, logger, responsive, result
-│   │   └── widgets/            the sketch UI kit
+│   │   └── widgets/            the app UI kit: buttons, cards, states, dialogs
 │   ├── models/                 plain value types; no Firebase imports
 │   ├── services/               Firebase and socket access
 │   ├── repositories/           interfaces + impl/ (Firebase and socket backed)
 │   ├── providers/              Riverpod wiring
 │   ├── features/               one folder per screen
-│   ├── theme/                  colours, type, spacing, sketch borders
+│   ├── theme/                  design tokens: colour, type, spacing, depth, motion
 │   └── routes/                 route names
 │
 ├── functions/                  THE AUTHORITATIVE BACKEND (TypeScript)
@@ -379,7 +379,7 @@ cd server && npm test
 | `server/test/boards.test.js` | stroke order, undo/redo ownership, caps, rate limiting |
 | `test/unit/rules_test.dart` | client-side prediction rules, timer maths |
 | `test/unit/models_test.dart` | wire-format round-trips |
-| `test/widget/sketch_widgets_test.dart` | the UI kit and the hand-drawn border |
+| `test/widget/design_system_test.dart` | the tokens, both themes, and the widget kit |
 
 ---
 
@@ -459,15 +459,17 @@ App Check on web needs a reCAPTCHA v3 site key passed as
 
 ## Branding
 
-The mark is one continuous pen stroke that starts as a scribble and ends as a
-question mark — the two things a player does, drawn without lifting the pen —
-in ink on paper, with a single felt-tip red dot.
+The mark is a cat sitting on its haunches, eyes squeezed shut, one paw clapped
+over its mouth because it cannot keep a straight face — the moment *after* the
+stupid thing happened.
 
 **There is no source image.** The mark is geometry, defined once in
-[`lib/theme/brand.dart`](lib/theme/brand.dart) and drawn by `BrandMarkPainter`
-using the same deterministic jitter (`SketchNoise`) as every hand-drawn border
-in the app. Everything else is that path scaled to fit, so a launcher icon can
-never drift out of sync with the logo on the splash screen.
+[`lib/theme/brand.dart`](lib/theme/brand.dart) and drawn by `BrandMarkPainter`.
+Everything else — the in-app logo, the launcher icons on five platforms, the
+splash art — is that same set of paths scaled to fit, so a launcher icon can
+never drift out of sync with the logo on the splash screen. Re-bake the bitmaps
+after a change to the geometry or the brand colours with
+`flutter test tool/generate_brand_assets.dart`.
 
 **In the app**, reach for the widgets in
 [`lib/core/widgets/brand_logo.dart`](lib/core/widgets/brand_logo.dart), all of

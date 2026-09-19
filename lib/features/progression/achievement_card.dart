@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/models/progression.dart';
 import 'package:scribble_guess/theme/theme.dart';
 
@@ -7,11 +7,11 @@ import 'package:scribble_guess/theme/theme.dart';
 ///
 /// ## What distinguishes the two states
 ///
-/// An unlocked card has a full ink border and a filled medal; a locked one has
-/// the faint border and an outline medal, dimmed. No colour wash, no shadow,
-/// no lock icon overlay — the same restraint the unread notification row uses,
-/// and for the same reason: the sketchbook style has one border weight and one
-/// fill to spend, and spending more would make a list of twelve cards shout.
+/// An unlocked card is washed in the trophy gold and carries a filled medal; a
+/// locked one is a plain card with a dimmed outline medal. No shadow and no
+/// lock overlay — the same restraint the unread notification row uses, and for
+/// the same reason: the system has one wash and one keyline to spend, and
+/// spending more would make a list of twelve cards shout.
 ///
 /// A locked card still shows its reward, because the screen is a list of
 /// things to aim at rather than only a trophy case.
@@ -24,13 +24,13 @@ class AchievementCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final bool unlocked = achievement.unlocked;
 
-    return SketchCard(
+    return AppCard(
       selected: unlocked,
-      borderColor: unlocked ? colors.ink : colors.inkFaint,
+      tone: colors.accentYellow,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,7 +49,7 @@ class AchievementCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: text.titleSmall?.copyWith(
-                          color: unlocked ? colors.ink : colors.inkSoft,
+                          color: unlocked ? colors.text : colors.textMuted,
                           fontWeight: unlocked ? FontWeight.w800 : FontWeight.w600,
                         ),
                       ),
@@ -58,7 +58,7 @@ class AchievementCard extends StatelessWidget {
                     Text(
                       '+${achievement.xpReward} XP',
                       style: text.labelSmall?.copyWith(
-                        color: unlocked ? colors.accentGreen : colors.inkFaint,
+                        color: unlocked ? colors.accentGreen : colors.textFaint,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -67,7 +67,7 @@ class AchievementCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   achievement.description,
-                  style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                  style: text.bodySmall?.copyWith(color: colors.textMuted),
                 ),
 
                 // The bar is drawn only where it says something. "1 of 1" is
@@ -90,7 +90,7 @@ class _Medal extends StatelessWidget {
   const _Medal({required this.unlocked, required this.colors});
 
   final bool unlocked;
-  final SketchColors colors;
+  final AppPalette colors;
 
   @override
   Widget build(BuildContext context) {
@@ -98,17 +98,19 @@ class _Medal extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: unlocked ? colors.accentYellow : colors.paper,
+        color: unlocked ? colors.wash(colors.accentYellow) : colors.surfaceSunken,
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         border: Border.all(
-          color: unlocked ? colors.ink : colors.inkFaint,
-          width: AppSpacing.border,
+          color: unlocked
+              ? colors.washBorder(colors.accentYellow)
+              : colors.border,
+          width: AppSpacing.hairline,
         ),
       ),
       child: Icon(
         unlocked ? Icons.workspace_premium : Icons.workspace_premium_outlined,
         size: 22,
-        color: unlocked ? colors.ink : colors.inkFaint,
+        color: unlocked ? colors.accentYellow : colors.textFaint,
       ),
     );
   }
@@ -123,7 +125,7 @@ class _ProgressRow extends StatelessWidget {
   });
 
   final Achievement achievement;
-  final SketchColors colors;
+  final AppPalette colors;
   final TextTheme text;
 
   @override
@@ -134,18 +136,17 @@ class _ProgressRow extends StatelessWidget {
         Container(
           height: 8,
           decoration: BoxDecoration(
-            color: colors.paper,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            border: Border.all(color: colors.inkFaint, width: AppSpacing.border),
+            color: colors.surfaceActive,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm - 1),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) => Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
                   width: constraints.maxWidth * achievement.fraction,
-                  color: colors.accentBlue,
+                  color: colors.tertiary,
                 ),
               ),
             ),
@@ -154,7 +155,7 @@ class _ProgressRow extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           achievement.progressLabel,
-          style: text.labelSmall?.copyWith(color: colors.inkFaint),
+          style: text.labelSmall?.copyWith(color: colors.textFaint),
         ),
       ],
     );

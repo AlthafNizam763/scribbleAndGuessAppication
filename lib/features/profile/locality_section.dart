@@ -174,7 +174,7 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     // Filling the controllers is done from a listener rather than from the
     // body below: writing to a TextEditingController notifies the TextField
@@ -194,7 +194,7 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
     if (async.isLoading && !async.hasValue) {
       return const Padding(
         padding: EdgeInsets.all(AppSpacing.lg),
-        child: Center(child: CircularProgressIndicator()),
+        child: AppLoadingState(),
       );
     }
 
@@ -211,7 +211,7 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
           padding: const EdgeInsets.only(left: AppSpacing.xs),
           child: Text(
             context.l10n.localitySection.toUpperCase(),
-            style: text.labelSmall?.copyWith(color: colors.inkSoft),
+            style: text.labelSmall?.copyWith(color: colors.textMuted),
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -222,17 +222,17 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
           ),
           child: Text(
             context.l10n.localityHint,
-            style: text.bodySmall?.copyWith(color: colors.inkSoft),
+            style: text.bodySmall?.copyWith(color: colors.textMuted),
           ),
         ),
-        SketchCard(
+        AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _CurrentTown(locality: saved),
               const SizedBox(height: AppSpacing.md),
               if (canDetect) ...<Widget>[
-                SketchButton.primary(
+                AppButton.primary(
                   label: _detecting
                       ? context.l10n.locationDetecting
                       : saved == null
@@ -243,11 +243,11 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
                   onPressed: busy ? null : _detect,
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                SketchButton(
+                AppButton(
                   label: manualVisible
                       ? context.l10n.locationHideManual
                       : context.l10n.locationEnterManually,
-                  variant: SketchButtonVariant.ghost,
+                  variant: AppButtonVariant.ghost,
                   expand: true,
                   onPressed: busy
                       ? null
@@ -285,7 +285,7 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                SketchButton(
+                AppButton(
                   label: context.l10n.save,
                   icon: Icons.location_on_outlined,
                   expand: true,
@@ -297,9 +297,9 @@ class _LocalitySectionState extends ConsumerState<LocalitySection> {
               ],
               if (saved != null) ...<Widget>[
                 const SizedBox(height: AppSpacing.sm),
-                SketchButton(
+                AppButton(
                   label: context.l10n.locationClear,
-                  variant: SketchButtonVariant.ghost,
+                  variant: AppButtonVariant.ghost,
                   expand: true,
                   onPressed: busy ? null : _clear,
                 ),
@@ -320,7 +320,7 @@ class _CurrentTown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final bool isSet = locality != null;
 
@@ -329,7 +329,7 @@ class _CurrentTown extends StatelessWidget {
         Icon(
           isSet ? Icons.place : Icons.place_outlined,
           size: AppSpacing.lg,
-          color: isSet ? colors.ink : colors.inkFaint,
+          color: isSet ? colors.text : colors.textFaint,
         ),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
@@ -338,12 +338,12 @@ class _CurrentTown extends StatelessWidget {
             children: <Widget>[
               Text(
                 context.l10n.locationCurrent.toUpperCase(),
-                style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                style: text.labelSmall?.copyWith(color: colors.textMuted),
               ),
               Text(
                 isSet ? locality!.display : context.l10n.locationNoneSet,
                 style: text.bodyLarge?.copyWith(
-                  color: isSet ? colors.ink : colors.inkSoft,
+                  color: isSet ? colors.text : colors.textMuted,
                 ),
               ),
             ],

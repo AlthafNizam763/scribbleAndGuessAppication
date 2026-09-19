@@ -50,13 +50,13 @@ class HowToPlayScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final List<({IconData icon, String title, String body})> rules = _rulesFor(
       context.l10n,
     );
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.howToPlayTitle,
       child: ListView.separated(
         padding: pagePadding(context),
@@ -68,30 +68,34 @@ class HowToPlayScreen extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Text(
                 context.l10n.howToPlayIntro,
-                style: text.bodyLarge?.copyWith(color: colors.inkSoft),
+                style: text.bodyLarge?.copyWith(color: colors.textMuted),
               ),
             );
           }
 
           final ({IconData icon, String title, String body}) rule =
               rules[index - 1];
-          return SketchCard(
+          return AppCard(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Container(
-                  height: 40,
-                  width: 40,
+                  height: 44,
+                  width: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: colors.accentAt(index),
-                    shape: BoxShape.circle,
+                    color: colors.wash(colors.accentAt(index)),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     border: Border.all(
-                      color: colors.ink,
-                      width: AppSpacing.border,
+                      color: colors.washBorder(colors.accentAt(index)),
+                      width: AppSpacing.hairline,
                     ),
                   ),
-                  child: Icon(rule.icon, size: 20, color: colors.ink),
+                  child: Icon(
+                    rule.icon,
+                    size: 20,
+                    color: colors.accentAt(index),
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -100,12 +104,12 @@ class HowToPlayScreen extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         rule.title,
-                        style: text.titleSmall?.copyWith(color: colors.ink),
+                        style: text.titleSmall?.copyWith(color: colors.text),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         rule.body,
-                        style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+                        style: text.bodyMedium?.copyWith(color: colors.textMuted),
                       ),
                     ],
                   ),

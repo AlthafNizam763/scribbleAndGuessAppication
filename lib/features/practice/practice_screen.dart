@@ -204,7 +204,7 @@ class _PracticeScreenState extends ConsumerState<PracticeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.practiceTitle,
       padded: false,
       constrained: false,
@@ -269,7 +269,7 @@ class _PracticeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final int seconds =
         session.secondsRemaining(DateTime.now().millisecondsSinceEpoch);
@@ -285,7 +285,7 @@ class _PracticeHeader extends StatelessWidget {
         children: <Widget>[
           Text(
             '${context.l10n.practiceScore} ${session.score}',
-            style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+            style: text.bodyMedium?.copyWith(color: colors.textMuted),
           ),
           Expanded(
             child: Center(
@@ -294,7 +294,7 @@ class _PracticeHeader extends StatelessWidget {
                 // Letter spacing is what turns the mask into a row of slots
                 // rather than a word with holes in it.
                 style: text.titleLarge?.copyWith(
-                  color: colors.ink,
+                  color: colors.text,
                   letterSpacing: 4,
                 ),
               ),
@@ -304,7 +304,7 @@ class _PracticeHeader extends StatelessWidget {
             Text(
               '$seconds',
               style: text.titleMedium?.copyWith(
-                color: seconds <= 10 ? colors.danger : colors.ink,
+                color: seconds <= 10 ? colors.danger : colors.text,
               ),
             ),
         ],
@@ -322,11 +322,11 @@ class _ChoiceOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return ColoredBox(
-      color: colors.paper.withValues(alpha: 0.94),
+      color: colors.surface.withValues(alpha: 0.94),
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -335,11 +335,11 @@ class _ChoiceOverlay extends StatelessWidget {
             children: <Widget>[
               Text(
                 context.l10n.practiceChooseWord,
-                style: text.titleMedium?.copyWith(color: colors.ink),
+                style: text.titleMedium?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.md),
               for (final WordItem choice in choices) ...<Widget>[
-                SketchButton(
+                AppButton(
                   label: choice.text,
                   expand: true,
                   onPressed: () => onChoose(choice),
@@ -363,37 +363,37 @@ class _FinishedOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final bool won = session.lastVerdict == GuessVerdict.correct;
 
     return ColoredBox(
-      color: colors.paper.withValues(alpha: 0.94),
+      color: colors.surface.withValues(alpha: 0.94),
       child: Center(
-        child: SketchCard(
+        child: AppCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Icon(
                 won ? Icons.check_circle_outline : Icons.schedule,
-                color: won ? colors.success : colors.inkSoft,
+                color: won ? colors.success : colors.textMuted,
                 size: 40,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 won ? context.l10n.practiceGotIt : context.l10n.practiceTimeUp,
-                style: text.titleMedium?.copyWith(color: colors.ink),
+                style: text.titleMedium?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 session.word?.text ?? '',
-                style: text.headlineSmall?.copyWith(color: colors.ink),
+                style: text.headlineSmall?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.lg),
-              SketchButton(
+              AppButton(
                 label: context.l10n.practiceNextWord,
                 icon: Icons.arrow_forward,
-                variant: SketchButtonVariant.primary,
+                variant: AppButtonVariant.primary,
                 onPressed: onNext,
               ),
             ],
@@ -428,7 +428,7 @@ class _PracticeControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return SafeArea(
@@ -442,7 +442,7 @@ class _PracticeControls extends StatelessWidget {
                 IconButton(
                   tooltip: context.l10n.practiceTools,
                   icon: const Icon(Icons.palette_outlined),
-                  color: colors.ink,
+                  color: colors.text,
                   // Practice has no colour row of its own, so the tray is the
                   // only palette on this screen — and it carries the same
                   // three board actions as the row beside it.
@@ -458,13 +458,13 @@ class _PracticeControls extends StatelessWidget {
                 IconButton(
                   tooltip: context.l10n.practiceUndo,
                   icon: const Icon(Icons.undo),
-                  color: colors.ink,
+                  color: colors.text,
                   onPressed: board.canUndo ? onUndo : null,
                 ),
                 IconButton(
                   tooltip: context.l10n.practiceClear,
                   icon: const Icon(Icons.delete_outline),
-                  color: colors.ink,
+                  color: colors.text,
                   onPressed: board.canUndo ? onClear : null,
                 ),
                 const Spacer(),
@@ -472,7 +472,7 @@ class _PracticeControls extends StatelessWidget {
                   onPressed: onGiveUp,
                   child: Text(
                     context.l10n.practiceGiveUp,
-                    style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+                    style: text.bodyMedium?.copyWith(color: colors.textMuted),
                   ),
                 ),
               ],
@@ -494,7 +494,7 @@ class _PracticeControls extends StatelessWidget {
                 },
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.send),
-                  color: colors.ink,
+                  color: colors.text,
                   onPressed: () => onGuess(controller.text),
                 ),
               ),

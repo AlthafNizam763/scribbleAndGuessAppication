@@ -92,16 +92,16 @@ class _PlayerProfileScreenState extends ConsumerState<PlayerProfileScreen> {
   Widget build(BuildContext context) {
     final PublicProfile? profile = _profile;
 
-    return SketchScaffold(
+    return AppScaffold(
       title: profile?.card.name.isNotEmpty ?? false
           ? profile!.card.name
           : context.l10n.playerProfileTitle,
       child: switch ((_loading, profile)) {
-        (true, null) => const Center(child: CircularProgressIndicator()),
-        (_, null) => SketchEmptyState(
+        (true, null) => const AppLoadingState(),
+        (_, null) => AppEmptyState(
             message: _failure?.message ?? context.l10n.errorUnknown,
             icon: Icons.person_off_outlined,
-            action: SketchButton(
+            action: AppButton(
               label: context.l10n.retry,
               onPressed: _load,
             ),
@@ -129,13 +129,13 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return ListView(
       padding: pagePadding(context),
       children: <Widget>[
-        SketchCard(
+        AppCard(
           child: Column(
             children: <Widget>[
               PlayerAvatar(
@@ -147,13 +147,13 @@ class _Body extends ConsumerWidget {
               Text(
                 profile.card.name,
                 textAlign: TextAlign.center,
-                style: text.titleLarge?.copyWith(color: colors.ink),
+                style: text.titleLarge?.copyWith(color: colors.text),
               ),
               if (profile.locality != null) ...<Widget>[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   profile.locality!.display,
-                  style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                  style: text.bodySmall?.copyWith(color: colors.textMuted),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
@@ -161,7 +161,7 @@ class _Body extends ConsumerWidget {
                 profile.rank != null
                     ? '${context.l10n.playerProfileRank}  #${profile.rank}'
                     : context.l10n.playerProfileUnranked,
-                style: text.labelMedium?.copyWith(color: colors.inkSoft),
+                style: text.labelMedium?.copyWith(color: colors.textMuted),
               ),
               StatsStrip(stats: profile.stats),
             ],
@@ -199,7 +199,7 @@ class _Actions extends ConsumerWidget {
 
       SocialRelation.none => Column(
           children: <Widget>[
-            SketchButton.primary(
+            AppButton.primary(
               label: context.l10n.friendAdd,
               icon: Icons.person_add_alt,
               busy: busy,
@@ -212,23 +212,23 @@ class _Actions extends ConsumerWidget {
 
       SocialRelation.requestSent => Column(
           children: <Widget>[
-            SketchCard(
+            AppCard(
               child: Row(
                 children: <Widget>[
-                  Icon(Icons.schedule, size: 18, color: context.sketch.inkSoft),
+                  Icon(Icons.schedule, size: 18, color: context.palette.textMuted),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     context.l10n.friendRequested,
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
-                        ?.copyWith(color: context.sketch.inkSoft),
+                        ?.copyWith(color: context.palette.textMuted),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            SketchButton(
+            AppButton(
               label: context.l10n.friendCancelRequest,
               expand: true,
               busy: busy,
@@ -243,7 +243,7 @@ class _Actions extends ConsumerWidget {
 
       SocialRelation.requestReceived => Column(
           children: <Widget>[
-            SketchButton.primary(
+            AppButton.primary(
               label: context.l10n.friendAccept,
               icon: Icons.check,
               busy: busy,
@@ -252,7 +252,7 @@ class _Actions extends ConsumerWidget {
                   : () => onAct(() => actions.accept(profile.pendingRequestId)),
             ),
             const SizedBox(height: AppSpacing.sm),
-            SketchButton(
+            AppButton(
               label: context.l10n.friendReject,
               expand: true,
               onPressed: busy || profile.pendingRequestId.isEmpty
@@ -266,13 +266,13 @@ class _Actions extends ConsumerWidget {
 
       SocialRelation.friends => Column(
           children: <Widget>[
-            SketchCard(
+            AppCard(
               child: Row(
                 children: <Widget>[
                   Icon(
                     Icons.people_alt_outlined,
                     size: 18,
-                    color: context.sketch.ink,
+                    color: context.palette.text,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
@@ -280,7 +280,7 @@ class _Actions extends ConsumerWidget {
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
-                        ?.copyWith(color: context.sketch.ink),
+                        ?.copyWith(color: context.palette.text),
                   ),
                 ],
               ),
@@ -301,13 +301,13 @@ class _Actions extends ConsumerWidget {
 
       SocialRelation.blocked => Column(
           children: <Widget>[
-            SketchCard(
+            AppCard(
               child: Row(
                 children: <Widget>[
                   Icon(
                     Icons.block,
                     size: 18,
-                    color: context.sketch.danger,
+                    color: context.palette.danger,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -316,7 +316,7 @@ class _Actions extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
-                          ?.copyWith(color: context.sketch.danger),
+                          ?.copyWith(color: context.palette.danger),
                     ),
                   ),
                 ],
@@ -392,12 +392,12 @@ class _ConfirmButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SketchButton(
+    return AppButton(
       label: label,
       expand: true,
       variant: destructive
-          ? SketchButtonVariant.danger
-          : SketchButtonVariant.secondary,
+          ? AppButtonVariant.danger
+          : AppButtonVariant.secondary,
       busy: busy,
       onPressed: busy
           ? null

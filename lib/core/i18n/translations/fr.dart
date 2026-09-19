@@ -7,7 +7,7 @@
 /// French's CLDR plural categories are `one` (which covers zero as well as
 /// one) and `other`; `{n}` is replaced with the count.
 const Map<String, String> frStrings = <String, String>{
-  'appTagline': 'Dessine. Devine. Gagne.',
+  'appTagline': 'Prenez des décisions stupides. Ensemble.',
 
   // --- Common actions ------------------------------------------------------
   'ok': 'OK',
@@ -424,12 +424,12 @@ const Map<String, String> frStrings = <String, String>{
   'locationDetecting': 'Recherche de ta ville…',
   'locationNoticeTitle': 'Utiliser ta position ?',
   'locationNoticeBody':
-      'Scribble & Guess peut remplir ta ville à ta place.\n\n• Ton appareil détermine approximativement où tu es, et nous le transformons en nom de ville sur ton téléphone même.\n• Seuls la ville, la région et le pays sont enregistrés — jamais ta position exacte, ni ton adresse, ni un historique de tes déplacements.\n• Cela se produit une seule fois, quand tu appuies sur le bouton. Rien ne tourne en arrière-plan.\n• C’est utilisé uniquement pour le classement local. Les autres joueurs voient la ville, et rien de plus précis.\n\nTu peux refuser et saisir ta ville toi-même, ou passer entièrement cette étape.',
+      'STUPID GAMES peut remplir ta ville à ta place.\n\n• Ton appareil détermine approximativement où tu es, et nous le transformons en nom de ville sur ton téléphone même.\n• Seuls la ville, la région et le pays sont enregistrés — jamais ta position exacte, ni ton adresse, ni un historique de tes déplacements.\n• Cela se produit une seule fois, quand tu appuies sur le bouton. Rien ne tourne en arrière-plan.\n• C’est utilisé uniquement pour le classement local. Les autres joueurs voient la ville, et rien de plus précis.\n\nTu peux refuser et saisir ta ville toi-même, ou passer entièrement cette étape.',
   'locationNoticeAllow': 'Continuer',
   'locationNoticeNotNow': 'Pas maintenant',
   'locationSaved': 'Enregistré.',
   'locationDeniedHint': 'Pas de souci — saisis ta ville ci-dessous.',
-  'locationBlockedTitle': 'La position est désactivée pour Scribble & Guess',
+  'locationBlockedTitle': 'La position est désactivée pour STUPID GAMES',
   'locationBlockedBody':
       'Ton téléphone ne redemandera pas tant que tu ne changes pas ça dans les réglages du système. Tu peux aussi simplement saisir ta ville.',
   'locationOpenSettings': 'Ouvrir les réglages',
@@ -599,7 +599,7 @@ const Map<String, String> frStrings = <String, String>{
   'progressionLevelUp': 'Niveau {level} — {title}',
   'friendRemoveBody':
       'Toi et {name} ne serez plus amis. L’un de vous pourra envoyer une nouvelle demande plus tard.',
-  'inviteMessage': 'Rejoins mon salon Scribble & Guess ! Code : {code}',
+  'inviteMessage': 'Rejoins mon salon STUPID GAMES ! Code : {code}',
   'versionLabel': 'Version {version}',
   'reconnectingIn': 'Reconnexion dans {seconds} s',
 };

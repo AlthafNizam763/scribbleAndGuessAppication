@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:scribble_guess/core/constants/app_constants.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
+import 'package:scribble_guess/core/widgets/app_button.dart';
+import 'package:scribble_guess/core/widgets/app_scaffold.dart';
 import 'package:scribble_guess/models/chat_message.dart';
 import 'package:scribble_guess/models/enums.dart';
 import 'package:scribble_guess/theme/theme.dart';
@@ -55,7 +56,7 @@ class _ChatListState extends State<ChatList> {
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
-      return SketchEmptyState(
+      return AppEmptyState(
         message: context.l10n.chatEmpty,
         icon: Icons.chat_bubble_outline,
       );
@@ -81,7 +82,7 @@ class _ChatLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     // System lines are centred and italic; player lines read as a transcript.
@@ -100,8 +101,8 @@ class _ChatLine extends StatelessWidget {
       ChatMessageType.playerJoined => colors.success,
       ChatMessageType.playerLeft => colors.danger,
       ChatMessageType.hint => colors.info,
-      ChatMessageType.system => colors.inkSoft,
-      _ => colors.ink,
+      ChatMessageType.system => colors.textMuted,
+      _ => colors.text,
     };
 
     if (isSystem) {
@@ -135,18 +136,22 @@ class _ChatLine extends StatelessWidget {
       ),
       decoration: highlight
           ? BoxDecoration(
-              color: tint.withValues(alpha: 0.14),
+              color: colors.wash(tint),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              border: Border.all(
+                color: colors.washBorder(tint),
+                width: AppSpacing.hairline,
+              ),
             )
           : null,
       child: RichText(
         text: TextSpan(
-          style: text.bodyMedium?.copyWith(color: colors.ink),
+          style: text.bodyMedium?.copyWith(color: colors.text),
           children: <InlineSpan>[
             TextSpan(
               text: '${message.senderName}: ',
               style: text.bodyMedium?.copyWith(
-                color: isSelf ? colors.accentBlue : colors.inkSoft,
+                color: isSelf ? colors.primary : colors.textMuted,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -155,7 +160,7 @@ class _ChatLine extends StatelessWidget {
                   ? context.l10n.gameYouGuessedIt
                   : message.text,
               style: text.bodyMedium?.copyWith(
-                color: highlight ? tint : colors.ink,
+                color: highlight ? tint : colors.text,
                 fontWeight: highlight ? FontWeight.w700 : null,
               ),
             ),
@@ -210,7 +215,7 @@ class _ChatComposerState extends State<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -236,11 +241,13 @@ class _ChatComposerState extends State<ChatComposer> {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        IconButton(
-          onPressed: widget.enabled ? _submit : null,
-          icon: const Icon(Icons.send),
+        AppIconButton(
+          icon: Icons.send_rounded,
           tooltip: context.l10n.chatSend,
-          color: colors.ink,
+          filled: true,
+          tone: colors.primary,
+          onPressed: widget.enabled ? _submit : null,
+          size: 48,
         ),
       ],
     );

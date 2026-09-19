@@ -1,48 +1,89 @@
 import 'dart:math' as math;
-import 'dart:ui' show PathMetric, Tangent;
 
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/theme/theme.dart';
 
-/// Paints the Scribble & Guess mark into whatever box it is given.
+/// The five colours one drawing of the mark is printed in.
 ///
-/// [Brand] holds the geometry; this holds the hand. The path is resampled and
-/// nudged off true with [SketchNoise] — the same deterministic jitter every
-/// border in the app uses — then traced twice, the second pass fainter, the
-/// way a pen doubles back over a line. Because the jitter is a pure function
-/// of [seed], the logo looks identical on every frame instead of shimmering.
-///
-/// Colours are passed in rather than read from a theme, so one painter serves
-/// both the in-app logo, which follows brightness, and the baked launcher
-/// icons, which cannot.
-class BrandMarkPainter extends CustomPainter {
-  const BrandMarkPainter({
-    required this.ink,
+/// Passed around as a set rather than read from a theme, because the same
+/// painter serves both the in-app logo, which may follow brightness, and the
+/// baked launcher icons, which cannot — a PNG has no idea what the phone will
+/// be set to when somebody looks at it.
+@immutable
+class BrandInk {
+  const BrandInk({
+    required this.fur,
+    required this.outline,
+    required this.light,
     required this.accent,
-    this.seed = defaultSeed,
-    this.amplitude = 0.5,
-    this.passes = 2,
   });
 
-  /// The wobble the brand is drawn with. Pinned so the mark is the same shape
-  /// in the app as it is in the launcher.
-  static const int defaultSeed = 0x5C81BB;
+  /// The full-colour mark: orange cat, ink outline, cream face, pink ears.
+  static const BrandInk full = BrandInk(
+    fur: Brand.fur,
+    outline: Brand.outline,
+    light: Brand.light,
+    accent: Brand.accent,
+  );
 
-  /// Colour of the stroke itself.
-  final Color ink;
+  /// One flat colour throughout, for Android's themed icon layer and anywhere
+  /// else that reads alpha and supplies its own colour.
+  static BrandInk flat(Color color) =>
+      BrandInk(fur: color, outline: color, light: color, accent: color);
 
-  /// Colour of the question mark's dot — the one spot of colour in the mark.
+  /// A two-tone cut for placement over a coloured surface: the coat takes the
+  /// surface's own ink, and the face stays pale so the expression survives.
+  static BrandInk mono({required Color ink, required Color paper}) =>
+      BrandInk(fur: ink, outline: ink, light: paper, accent: paper);
+
+  /// The coat.
+  final Color fur;
+
+  /// Every outline and crease.
+  final Color outline;
+
+  /// Muzzle, paw and the two shut eyes.
+  final Color light;
+
+  /// Inner ears.
   final Color accent;
 
-  /// Fixes the wobble. Equal seeds produce an identical mark.
-  final int seed;
+  @override
+  bool operator ==(Object other) =>
+      other is BrandInk &&
+      other.fur == fur &&
+      other.outline == outline &&
+      other.light == light &&
+      other.accent == accent;
 
-  /// How far, in design units, the line may stray from true.
-  final double amplitude;
+  @override
+  int get hashCode => Object.hash(fur, outline, light, accent);
+}
 
-  /// How many times the stroke is traced. Two reads as pen; one reads as font.
-  final int passes;
+/// Paints the STUPID GAMES cat into whatever box it is given.
+///
+/// [Brand] holds the geometry; this holds the order things are laid down in,
+/// which is the part that actually matters. The cat is built back to front —
+/// tail, body, ears, face, then the raised paw last — so the paw sits over the
+/// muzzle rather than beside it, and the whole thing reads as one creature
+/// instead of a pile of shapes.
+///
+/// Outlines are proportional to the rendered size rather than fixed in design
+/// units, so the mark carries the same visual weight as a 16-pixel favicon and
+/// as a 1024-pixel store listing.
+class BrandMarkPainter extends CustomPainter {
+  const BrandMarkPainter({this.ink = BrandInk.full, this.tilt = 0, this.hop = 0});
+
+  /// The colours this drawing is printed in.
+  final BrandInk ink;
+
+  /// Lean, in radians, about [Brand.pivot]. Zero everywhere static; the splash
+  /// rocks this through [Brand.laughTilt] and back.
+  final double tilt;
+
+  /// Rise, as a fraction of the design box's height. Positive lifts the cat.
+  final double hop;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -63,89 +104,94 @@ class BrandMarkPainter extends CustomPainter {
     );
     canvas.scale(scale);
 
-    final Paint pen = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = Brand.strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true;
-
-    final Path source = Brand.pen();
-    for (int pass = 0; pass < passes; pass++) {
-      pen.color = pass == 0 ? ink : ink.withValues(alpha: ink.a * 0.5);
-      canvas.drawPath(
-        _jitter(source, seed: seed + pass * 7919, amplitude: amplitude),
-        pen,
-      );
+    if (tilt != 0 || hop != 0) {
+      canvas.translate(Brand.pivot.dx, Brand.pivot.dy - hop * Brand.hopHeight);
+      canvas.rotate(tilt);
+      canvas.translate(-Brand.pivot.dx, -Brand.pivot.dy);
     }
 
-    // The dot, laid down as a single short dab so it keeps the round end and
-    // slight ovality of a real marker rather than looking like a stamped disc.
-    const double lean = Brand.dotRadius * 0.16;
-    canvas.drawLine(
-      Brand.dotCenter.translate(SketchNoise.at(seed, 901) * amplitude, -lean),
-      Brand.dotCenter.translate(SketchNoise.at(seed, 902) * amplitude, lean),
-      Paint()
-        ..color = accent
-        ..strokeWidth = Brand.dotRadius * 2
-        ..strokeCap = StrokeCap.round
-        ..isAntiAlias = true,
+    // Outline weight in design units: the fraction of the rendered width the
+    // brand asks for, floored so it never antialiases away to nothing.
+    final double pen = Brand.penFor(
+      Brand.outlineRatio * Brand.bounds.width,
+      scale,
     );
+
+    final Paint fill = Paint()..isAntiAlias = true;
+    final Paint stroke = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // ---- behind the cat --------------------------------------------------
+    // The tail is drawn first and outlined by over-stroking: a fat outline
+    // pass, then the coat laid inside it. Cheaper and more reliable than
+    // asking Skia for the outline of a stroked path.
+    stroke
+      ..color = ink.outline
+      ..strokeWidth = Brand.tailWidth + pen * 2;
+    canvas.drawPath(Brand.tail(), stroke);
+    stroke
+      ..color = ink.fur
+      ..strokeWidth = Brand.tailWidth;
+    canvas.drawPath(Brand.tail(), stroke);
+
+    // ---- the body --------------------------------------------------------
+    final Path body = Brand.silhouette();
+    fill.color = ink.fur;
+    canvas.drawPath(body, fill);
+
+    // Inner ears go on before the outline, so the outline closes over them.
+    fill.color = ink.accent;
+    canvas.drawPath(Brand.innerEar(mirrored: false), fill);
+    canvas.drawPath(Brand.innerEar(mirrored: true), fill);
+
+    stroke
+      ..color = ink.outline
+      ..strokeWidth = pen;
+    canvas.drawPath(body, stroke);
+
+    // ---- the face --------------------------------------------------------
+    fill.color = ink.light;
+    canvas.drawPath(Brand.muzzle(), fill);
+
+    stroke
+      ..color = ink.outline
+      ..strokeWidth = Brand.eyeWidth;
+    canvas.drawPath(Brand.eyes(), stroke);
+
+    stroke
+      ..color = ink.outline
+      ..strokeWidth = Brand.whiskerWidth;
+    canvas.drawPath(Brand.whiskers(), stroke);
+
+    // ---- the raised paw, last, so it covers the mouth ---------------------
+    //
+    // The paw is drawn with no arm behind it, on purpose. Every version that
+    // had one put a closed, outlined stub in the middle of the chest, which
+    // reads as something hanging off the cat rather than as its own limb — and
+    // at launcher size it is the first detail to turn to mush. The paw alone
+    // on the muzzle carries the whole gag.
+    final Path paw = Brand.paw();
+    fill.color = ink.light;
+    canvas.drawPath(paw, fill);
+    stroke
+      ..color = ink.outline
+      ..strokeWidth = pen;
+    canvas.drawPath(paw, stroke);
+    stroke.strokeWidth = Brand.toeWidth;
+    canvas.drawPath(Brand.toes(), stroke);
 
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(BrandMarkPainter old) =>
-      old.ink != ink ||
-      old.accent != accent ||
-      old.seed != seed ||
-      old.amplitude != amplitude ||
-      old.passes != passes;
+      old.ink != ink || old.tilt != tilt || old.hop != hop;
 }
 
-/// Resamples [source] and displaces each point along the path's normal.
-///
-/// Displacing along the normal rather than in a free direction makes the line
-/// bulge in and out instead of sliding along itself, which would only shorten
-/// it. The result is an open path: brand strokes are lines, never loops.
-Path _jitter(
-  Path source, {
-  required int seed,
-  required double amplitude,
-  double step = 2.2,
-}) {
-  final Path out = Path();
-  int index = 0;
-
-  for (final PathMetric metric in source.computeMetrics()) {
-    final double length = metric.length;
-    if (length <= 0) continue;
-    final int samples = math.max(8, (length / step).ceil());
-    bool started = false;
-
-    for (int i = 0; i <= samples; i++) {
-      final Tangent? tangent = metric.getTangentForOffset(
-        length * (i / samples),
-      );
-      if (tangent == null) continue;
-
-      final double noise = SketchNoise.at(seed, index++) * amplitude;
-      final Offset normal = Offset(-tangent.vector.dy, tangent.vector.dx);
-      final Offset point = tangent.position + normal * noise;
-
-      if (!started) {
-        out.moveTo(point.dx, point.dy);
-        started = true;
-      } else {
-        out.lineTo(point.dx, point.dy);
-      }
-    }
-  }
-  return out;
-}
-
-/// The Scribble & Guess symbol on its own, sized and inked for the theme.
+/// The STUPID GAMES cat on its own, sized and inked for the theme.
 ///
 /// Use this wherever the brand needs to appear without its name — a compact
 /// app bar, an empty state, a loading beat. Pair it with [BrandWordmark], or
@@ -153,9 +199,9 @@ Path _jitter(
 class BrandMark extends StatelessWidget {
   const BrandMark({
     this.size = 72,
-    this.ink,
-    this.accent,
-    this.seed = BrandMarkPainter.defaultSeed,
+    this.ink = BrandInk.full,
+    this.tilt = 0,
+    this.hop = 0,
     this.semanticLabel,
     super.key,
   });
@@ -163,14 +209,14 @@ class BrandMark extends StatelessWidget {
   /// Edge of the square the mark is fitted into.
   final double size;
 
-  /// Stroke colour. Defaults to the active theme's ink.
-  final Color? ink;
+  /// The colours it is printed in.
+  final BrandInk ink;
 
-  /// Dot colour. Defaults to the active theme's felt-tip red.
-  final Color? accent;
+  /// Lean, in radians.
+  final double tilt;
 
-  /// Fixes the wobble.
-  final int seed;
+  /// Rise, as a fraction of [Brand.hopHeight].
+  final double hop;
 
   /// Announced to screen readers. Leave null inside a lockup, where the
   /// wordmark beside it already says the name.
@@ -178,158 +224,178 @@ class BrandMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
-
     return Semantics(
       label: semanticLabel,
       image: semanticLabel != null,
       child: SizedBox.square(
         dimension: size,
         child: CustomPaint(
-          painter: BrandMarkPainter(
-            ink: ink ?? colors.ink,
-            accent: accent ?? colors.accentRed,
-            seed: seed,
-          ),
+          painter: BrandMarkPainter(ink: ink, tilt: tilt, hop: hop),
           isComplex: true,
-          willChange: false,
+          willChange: tilt != 0 || hop != 0,
         ),
       ),
     );
   }
 }
 
-/// The app name, hand-lettered, over a drawn swash.
+/// The app name, set as the STUPID GAMES logotype.
 ///
-/// The swash is not decoration for its own sake: PatrickHand at display size
-/// sits high and airy, and a line beneath gives the name something to stand
-/// on, so it reads as a logotype rather than as a heading.
+/// Two halves doing two jobs. **STUPID** is the loud one: every letter is its
+/// own tile, rocked a few degrees off true and alternating through the brand
+/// colours, so the word looks like it fell downstairs. **GAMES** underneath is
+/// straight, single-coloured and widely tracked — it is the half that has to
+/// stay legible at a glance, and it steadies the word above it.
+///
+/// Both halves are outlined by painting each glyph twice: a stroked pass in
+/// ink, then the fill on top. That is what makes the letters read as chunky
+/// cartoon type rather than as a bold system font.
 class BrandWordmark extends StatelessWidget {
   const BrandWordmark({
-    this.style,
-    this.color,
-    this.underline = true,
-    this.seed = 0x2D7A11,
+    this.height = 44,
+    this.outline,
+    this.semanticLabel,
     super.key,
   });
 
-  /// Defaults to the theme's `displaySmall` — the marker face, at 36.
-  final TextStyle? style;
+  /// Cap height of the STUPID row, in logical pixels. Everything else in the
+  /// lockup is derived from it, so one number scales the whole logotype.
+  final double height;
 
-  /// Letter colour. Defaults to the active theme's ink.
-  final Color? color;
+  /// Colour every glyph is outlined in. Defaults to the theme's ink, so the
+  /// wordmark stays legible on both paper and night.
+  final Color? outline;
 
-  /// Whether to draw the swash beneath the name.
-  final bool underline;
+  /// Announced to screen readers. Defaults to the app's name.
+  final String? semanticLabel;
 
-  /// Fixes the swash's wobble.
-  final int seed;
+  /// The colours STUPID cycles through, letter by letter.
+  static const List<Color> _riot = <Color>[
+    AppColors.violet,
+    AppColors.coral,
+    AppColors.aqua,
+    AppColors.brandOrange,
+    AppColors.violet,
+    AppColors.coral,
+  ];
+
+  /// How far each letter of STUPID leans, in degrees. Hand-set rather than
+  /// random: the word has to look thrown, but identically thrown every time
+  /// it is drawn, or the logo shimmers between frames.
+  static const List<double> _lean = <double>[-7, 5, -3, 8, -5, 4];
+
+  /// And how far each one sits off the baseline, as a fraction of [height].
+  static const List<double> _drop = <double>[0.06, -0.04, 0.03, -0.06, 0.05, 0];
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
-    final TextStyle base =
-        style ??
-        Theme.of(context).textTheme.displaySmall ??
-        const TextStyle(fontSize: 36);
-    final TextStyle effective = base.copyWith(color: color ?? colors.ink);
-    final double scale = effective.fontSize ?? 36;
+    final AppPalette colors = context.palette;
+    final Color edge = outline ?? colors.text;
+    const String loud = 'STUPID';
 
-    final Widget name = Text(
-      context.l10n.appName,
-      textAlign: TextAlign.center,
-      style: effective,
-    );
-    if (!underline) return name;
-
-    // IntrinsicWidth so the swash spans exactly the lettering, however wide
-    // the name renders at this size, rather than the whole available width.
-    return IntrinsicWidth(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          name,
-          SizedBox(
-            height: scale * 0.22,
-            child: CustomPaint(
-              painter: _SwashPainter(
-                color: effective.color ?? colors.ink,
-                strokeWidth: scale * 0.055,
-                seed: seed,
-              ),
+    return Semantics(
+      label: semanticLabel ?? context.l10n.appName,
+      image: true,
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                for (int i = 0; i < loud.length; i++)
+                  Transform.translate(
+                    offset: Offset(0, _drop[i] * height),
+                    child: Transform.rotate(
+                      angle: _lean[i] * math.pi / 180,
+                      child: _Glyph(
+                        character: loud[i],
+                        size: height,
+                        fill: _riot[i],
+                        outline: edge,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ],
+            SizedBox(height: height * 0.04),
+            _Glyph(
+              character: 'GAMES',
+              size: height * 0.64,
+              fill: AppColors.brandAqua,
+              outline: edge,
+              tracking: height * 0.1,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// The line under the wordmark: one shallow arc, traced twice.
-class _SwashPainter extends CustomPainter {
-  const _SwashPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.seed,
+/// One outlined glyph — or one outlined word, for the calmer half.
+class _Glyph extends StatelessWidget {
+  const _Glyph({
+    required this.character,
+    required this.size,
+    required this.fill,
+    required this.outline,
+    this.tracking = 0,
   });
 
-  final Color color;
-  final double strokeWidth;
-  final int seed;
+  final String character;
+  final double size;
+  final Color fill;
+  final Color outline;
+  final double tracking;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
+  Widget build(BuildContext context) {
+    // Plus Jakarta Sans ExtraBold is the chunkiest face the app ships, and at
+    // this weight it takes an outline without the counters filling in.
+    final TextStyle base = TextStyle(
+      fontFamily: AppTypography.bodyFamily,
+      fontWeight: AppTypography.black,
+      fontSize: size,
+      height: 1,
+      letterSpacing: tracking,
+    );
 
-    final Path source = Path()
-      ..moveTo(size.width * 0.02, size.height * 0.74)
-      ..quadraticBezierTo(
-        size.width * 0.52,
-        size.height * 0.04,
-        size.width * 0.98,
-        size.height * 0.56,
-      );
-
-    final Paint paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..isAntiAlias = true;
-
-    for (int pass = 0; pass < 2; pass++) {
-      paint.color = pass == 0 ? color : color.withValues(alpha: color.a * 0.4);
-      canvas.drawPath(
-        _jitter(
-          source,
-          seed: seed + pass * 7919,
-          amplitude: strokeWidth * 0.6,
-          step: size.width / 14,
+    return Stack(
+      children: <Widget>[
+        Text(
+          character,
+          style: base.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = size * 0.14
+              ..strokeJoin = StrokeJoin.round
+              ..color = outline
+              ..isAntiAlias = true,
+          ),
         ),
-        paint,
-      );
-    }
+        Text(character, style: base.copyWith(color: fill)),
+      ],
+    );
   }
-
-  @override
-  bool shouldRepaint(_SwashPainter old) =>
-      old.color != color || old.strokeWidth != strokeWidth || old.seed != seed;
 }
 
-/// The full lockup: mark, name, and an optional line under it.
+/// The full lockup: cat, name, and an optional line under it.
 ///
-/// This is the app signature — the splash and the main menu both open with
+/// This is the app signature — the splash and the sign-in gate both open with
 /// it, so the two stay identical without either screen owning the arrangement.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({
-    this.markSize = 72,
+    this.markSize = 96,
     this.caption,
     this.captionColor,
-    this.nameStyle,
+    this.tilt = 0,
+    this.hop = 0,
     super.key,
   });
 
-  /// Edge of the square the symbol is drawn in.
+  /// Edge of the square the cat is drawn in.
   final double markSize;
 
   /// A line under the name — the tagline, usually, or a status message.
@@ -338,27 +404,30 @@ class BrandLogo extends StatelessWidget {
   /// Colour of that line. Defaults to the theme's soft ink.
   final Color? captionColor;
 
-  /// Overrides the wordmark's type style.
-  final TextStyle? nameStyle;
+  /// Lean passed through to the cat.
+  final double tilt;
+
+  /// Rise passed through to the cat.
+  final double hop;
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        BrandMark(size: markSize),
-        SizedBox(height: markSize * 0.22),
-        BrandWordmark(style: nameStyle),
+        BrandMark(size: markSize, tilt: tilt, hop: hop),
+        SizedBox(height: markSize * 0.14),
+        BrandWordmark(height: markSize * 0.42),
         if (caption != null) ...<Widget>[
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: markSize * 0.16),
           Text(
             caption!,
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(
-              color: captionColor ?? colors.inkSoft,
+              color: captionColor ?? colors.textMuted,
             ),
           ),
         ],

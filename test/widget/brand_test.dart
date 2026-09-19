@@ -11,26 +11,32 @@ Widget _host(Widget child) => MaterialApp(
 
 void main() {
   group('Brand geometry', () {
-    test('bounds enclose the whole mark, dot included', () {
+    test('bounds enclose the whole cat, tail included', () {
       final Rect bounds = Brand.bounds;
 
       expect(bounds.width, greaterThan(0));
       expect(bounds.height, greaterThan(0));
-      // The dot is the lowest thing drawn, and it is not part of the pen path,
-      // so a bounds calculation that forgot it would cut the mark off.
-      expect(
-        bounds.bottom,
-        greaterThanOrEqualTo(Brand.dotCenter.dy + Brand.dotRadius),
-      );
-      expect(bounds.right, greaterThanOrEqualTo(Brand.dotCenter.dx));
+
+      // The tail is a stroke drawn outside the filled silhouette, and it is
+      // the rightmost thing in the mark. A bounds calculation that measured
+      // only the fill would crop it on every platform icon.
+      final Rect tail = Brand.tail().getBounds();
+      expect(bounds.right, greaterThanOrEqualTo(tail.right));
+      expect(bounds.top, lessThanOrEqualTo(Brand.silhouette().getBounds().top));
     });
 
-    test('bounds are tighter than the raw control-point box', () {
-      // Guards the reason `_measure` exists: control points reach outside the
-      // curve, so `getBounds` would pad the mark and push it off centre.
-      final Rect naive = Brand.pen().getBounds();
-      expect(Brand.bounds.right - Brand.strokeWidth / 2, lessThan(naive.right));
-      expect(Brand.bounds.top + Brand.strokeWidth / 2, greaterThan(naive.top));
+    test('the ears are the top of the mark', () {
+      // Cheap proxy for "the silhouette is still cat-shaped": whatever else
+      // moves, the ear tips have to stay the highest points, or the cat has
+      // quietly become a blob.
+      final Rect head = Brand.silhouette().getBounds();
+      expect(head.top, lessThan(16.5));
+    });
+
+    test('the paw sits over the muzzle, not beside it', () {
+      // The whole joke is the paw covering the mouth. If these two stop
+      // overlapping the cat is just waving.
+      expect(Brand.paw().getBounds().overlaps(Brand.muzzle().getBounds()), isTrue);
     });
 
     test('stays roughly square, so no platform icon crops it', () {
@@ -46,33 +52,33 @@ void main() {
     });
   });
 
+  group('BrandInk', () {
+    test('a flat cut collapses every colour into one', () {
+      const Color black = Color(0xFF000000);
+      final BrandInk flat = BrandInk.flat(black);
+
+      // The Android themed-icon layer reads alpha only, so anything that is
+      // not one flat colour here would render as a silhouette with holes.
+      expect(flat.fur, black);
+      expect(flat.outline, black);
+      expect(flat.light, black);
+      expect(flat.accent, black);
+    });
+  });
+
   group('BrandMarkPainter', () {
     test('repaints only when something visible changed', () {
-      const BrandMarkPainter base = BrandMarkPainter(
-        ink: Color(0xFF000000),
-        accent: Color(0xFFFF0000),
-      );
+      const BrandMarkPainter base = BrandMarkPainter();
 
       expect(base.shouldRepaint(base), isFalse);
       expect(
-        base.shouldRepaint(
-          const BrandMarkPainter(
-            ink: Color(0xFF111111),
-            accent: Color(0xFFFF0000),
-          ),
-        ),
+        base.shouldRepaint(BrandMarkPainter(ink: BrandInk.flat(const Color(0xFF111111)))),
         isTrue,
       );
-      expect(
-        base.shouldRepaint(
-          const BrandMarkPainter(
-            ink: Color(0xFF000000),
-            accent: Color(0xFFFF0000),
-            seed: 42,
-          ),
-        ),
-        isTrue,
-      );
+      // The splash animates these two, so a painter that ignored them would
+      // hold the first frame for the whole animation.
+      expect(base.shouldRepaint(const BrandMarkPainter(tilt: 0.1)), isTrue);
+      expect(base.shouldRepaint(const BrandMarkPainter(hop: 1)), isTrue);
     });
 
     testWidgets('paints without error at awkward sizes', (
@@ -83,17 +89,57 @@ void main() {
         expect(tester.takeException(), isNull);
       }
     });
+
+    testWidgets('paints without error mid-animation', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(const BrandMark(size: 96, tilt: Brand.laughTilt, hop: 1)),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('BrandWordmark', () {
+    testWidgets('sets STUPID letter by letter and GAMES as one word', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(_host(const BrandWordmark()));
+
+      // STUPID is six independently rocked tiles, each painted twice — once
+      // stroked for the outline, once filled — so every letter appears twice.
+      for (final String letter in <String>['S', 'T', 'U', 'P', 'I', 'D']) {
+        expect(find.text(letter), findsNWidgets(2));
+      }
+      // GAMES stays one run, so it keeps its tracking and stays legible.
+      expect(find.text('GAMES'), findsNWidgets(2));
+    });
+
+    testWidgets('announces the app name to screen readers', (
+      WidgetTester tester,
+    ) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
+      await tester.pumpWidget(_host(const BrandWordmark()));
+
+      // The letters are decoration; the name is what a screen reader needs.
+      expect(
+        find.bySemanticsLabel(AppStrings.appName),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
   });
 
   group('BrandLogo', () {
-    testWidgets('shows the name and, when given, a caption', (
+    testWidgets('shows the wordmark and, when given, a caption', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         _host(const BrandLogo(caption: AppStrings.appTagline)),
       );
 
-      expect(find.text(AppStrings.appName), findsOneWidget);
+      expect(find.byType(BrandMark), findsOneWidget);
+      expect(find.byType(BrandWordmark), findsOneWidget);
       expect(find.text(AppStrings.appTagline), findsOneWidget);
     });
 
@@ -102,7 +148,7 @@ void main() {
     ) async {
       await tester.pumpWidget(_host(const BrandLogo()));
 
-      expect(find.text(AppStrings.appName), findsOneWidget);
+      expect(find.byType(BrandWordmark), findsOneWidget);
       expect(find.text(AppStrings.appTagline), findsNothing);
     });
   });

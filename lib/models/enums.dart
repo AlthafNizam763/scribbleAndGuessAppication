@@ -513,7 +513,7 @@ enum ConnectionStatus {
 }
 
 /// Theme preference stored in the app settings.
-enum SketchThemeMode {
+enum AppThemeMode {
   /// Always the paper-light palette.
   light,
 
@@ -523,15 +523,15 @@ enum SketchThemeMode {
   /// Follow the device setting.
   system;
 
-  /// Parses [v], falling back to [SketchThemeMode.system].
-  static SketchThemeMode fromName(String? v) =>
-      asEnum(SketchThemeMode.values, v) ?? SketchThemeMode.system;
+  /// Parses [v], falling back to [AppThemeMode.system].
+  static AppThemeMode fromName(String? v) =>
+      asEnum(AppThemeMode.values, v) ?? AppThemeMode.system;
 
   /// Short human readable label.
   String get label => switch (this) {
-        SketchThemeMode.light => 'Light',
-        SketchThemeMode.dark => 'Dark',
-        SketchThemeMode.system => 'System',
+        AppThemeMode.light => 'Light',
+        AppThemeMode.dark => 'Dark',
+        AppThemeMode.system => 'System',
       };
 }
 

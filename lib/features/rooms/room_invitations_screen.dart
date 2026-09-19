@@ -29,15 +29,15 @@ class RoomInvitationsScreen extends ConsumerWidget {
     final AsyncValue<List<RoomInvitation>> invitations =
         ref.watch(roomInvitationsProvider);
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.invitationsTitle,
       padded: false,
       child: invitations.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.errorUnknown,
           icon: Icons.cloud_off_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: () => ref.read(roomInvitationsProvider.notifier).refresh(),
           ),
@@ -51,7 +51,7 @@ class RoomInvitationsScreen extends ConsumerWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: <Widget>[
                   SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-                  SketchEmptyState(
+                  AppEmptyState(
                     message: context.l10n.invitationsEmpty,
                     icon: Icons.mail_outline,
                   ),

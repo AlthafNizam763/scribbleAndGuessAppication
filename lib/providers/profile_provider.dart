@@ -28,10 +28,12 @@ class ProfileNotifier extends Notifier<PlayerProfile?> {
   /// used only as a stand-in before the session resolves, and is replaced on
   /// the next save.
   ///
-  /// Establishing the session first is what makes the first-run flow work: a
-  /// player who has just typed their name has no account yet, and
-  /// `ensureSession` creates one under that name rather than under the
-  /// placeholder.
+  /// The `ensureSession` call is a guard, not the thing that creates the
+  /// account: since sign-in became a gate, this screen is only reachable with
+  /// a session already in hand, so it short-circuits on the existing one. It
+  /// stays because this method must not write a profile against a
+  /// client-minted id if it is ever reached another way — the name itself is
+  /// pushed to the server by `updateProfile` below.
   Future<Result<void>> save(PlayerProfile profile) async {
     final AuthService auth = ref.read(authServiceProvider);
     await auth.ensureSession(profile: profile);

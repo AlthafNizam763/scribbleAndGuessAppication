@@ -64,7 +64,7 @@ const Map<String, String> enPatterns = <String, String>{
   'friendRemoveBody':
       'You and {name} will no longer be friends. Either of you can send a new '
           'request later.',
-  'inviteMessage': 'Join my Scribble & Guess room! Code: {code}',
+  'inviteMessage': 'Join my STUPID GAMES room! Code: {code}',
   'versionLabel': 'Version {version}',
   'reconnectingIn': 'Reconnecting in {seconds}s',
 };

@@ -1,5 +1,7 @@
 import 'package:scribble_guess/core/utils/result.dart';
 import 'package:scribble_guess/data/api/api_client.dart';
+import 'package:scribble_guess/models/discovered_room.dart';
+import 'package:scribble_guess/models/game_definition.dart';
 import 'package:scribble_guess/models/json_utils.dart';
 import 'package:scribble_guess/models/room_invite.dart';
 import 'package:scribble_guess/models/social.dart';
@@ -143,6 +145,31 @@ class RoomsApi {
     );
 
     return response.map(PublicRoomPage.fromJson);
+  }
+
+  /// Quick Match: joinable public rooms across **every** game.
+  ///
+  /// Distinct from [publicRooms], which is the Scribble & Guess browser and
+  /// stays that way. This reads both of the platform's room engines and
+  /// returns one merged list, each row tagged with the route needed to join it
+  /// — so the client never has to know which engine a given game runs on.
+  ///
+  /// [games] restricts to particular games; omitted means all of them. Unknown
+  /// ids are dropped by the server rather than refused.
+  Future<Result<RoomDiscoveryPage>> discoverRooms({
+    int limit = 30,
+    List<GameId> games = const <GameId>[],
+  }) async {
+    final Result<Map<String, dynamic>> response = await _client.get(
+      '/api/rooms/discover',
+      query: <String, String>{
+        'limit': '$limit',
+        if (games.isNotEmpty)
+          'games': games.map((GameId game) => game.wire).join(','),
+      },
+    );
+
+    return response.map(RoomDiscoveryPage.fromJson);
   }
 
   // --------------------------------------------------- joining and members --

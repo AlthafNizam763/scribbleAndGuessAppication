@@ -104,7 +104,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -119,7 +119,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
             painter: _BoardPainter(
               strokes: widget.board.strokes,
               pending: widget.pending,
-              background: colors.canvasWhite,
+              background: colors.canvas,
               cache: _cache,
             ),
             child: const SizedBox.expand(),
@@ -163,7 +163,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
         return DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            border: Border.all(color: colors.ink, width: AppSpacing.border),
+            border: Border.all(color: colors.border, width: AppSpacing.hairline),
           ),
           child: surface,
         );

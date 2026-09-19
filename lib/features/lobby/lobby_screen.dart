@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:scribble_guess/core/config/app_brand_config.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/core/rules/room_state_machine.dart';
@@ -62,6 +63,44 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     );
   }
 
+  /// Seats [count] Stupids, and says how many actually arrived.
+  ///
+  /// The server clamps the ask to the seats left, so the message quotes the
+  /// number it returned rather than the number requested — a host who asked
+  /// for four into two free seats should not be told four turned up.
+  Future<void> _addStupids(int count) async {
+    setState(() => _busy = true);
+    final Result<int> result =
+        await ref.read(roomRepositoryProvider).addStupids(count);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+
+    switch (result) {
+      case Ok<int>(:final int value):
+        notify(
+          context,
+          value == 1 ? '1 Stupid joined.' : '$value Stupids joined.',
+        );
+      case Err<int>(:final Failure failure):
+        notify(context, failure.message, isError: true);
+    }
+  }
+
+  Future<void> _clearStupids() async {
+    setState(() => _busy = true);
+    final Result<int> result =
+        await ref.read(roomRepositoryProvider).clearStupids();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _busy = false);
+    result.whenErr(
+      (Failure failure) => notify(context, failure.message, isError: true),
+    );
+  }
+
   Future<void> _start() async {
     setState(() => _busy = true);
     final Result<void> result =
@@ -94,7 +133,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final Room? room = ref.watch(roomProvider);
@@ -111,11 +150,11 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
     });
 
     if (room == null) {
-      return SketchScaffold(
+      return AppScaffold(
         title: context.l10n.lobbyTitle,
         showBack: false,
         banner: const ConnectionBanner(),
-        child: const Center(child: CircularProgressIndicator()),
+        child: const AppLoadingState(),
       );
     }
 
@@ -129,14 +168,20 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           _leave();
         }
       },
-      child: SketchScaffold(
+      child: AppScaffold(
         title: context.l10n.lobbyTitle,
         showBack: false,
         banner: const ConnectionBanner(),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          tooltip: context.l10n.leave,
-          onPressed: _leave,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.lg),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppIconButton(
+              icon: Icons.close_rounded,
+              tooltip: context.l10n.leave,
+              onPressed: _leave,
+            ),
+          ),
         ),
         bottom: isHost
             ? Column(
@@ -148,12 +193,12 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       child: Text(
                         context.l10n.lobbyNeedMorePlayers,
                         textAlign: TextAlign.center,
-                        style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                        style: text.bodySmall?.copyWith(color: colors.textMuted),
                       ),
                     ),
-                  SketchButton.primary(
+                  AppButton.primary(
                     label: context.l10n.lobbyStart,
-                    icon: Icons.play_arrow,
+                    icon: Icons.play_arrow_rounded,
                     busy: _busy,
                     onPressed: canStart ? _start : null,
                   ),
@@ -167,18 +212,18 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                     child: Text(
                       context.l10n.lobbyWaitingForHost,
                       textAlign: TextAlign.center,
-                      style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
                     ),
                   ),
-                  SketchButton(
+                  AppButton(
                     label: isReady
                         ? context.l10n.lobbyNotReady
                         : context.l10n.lobbyReady,
                     icon: isReady ? Icons.close : Icons.check,
                     expand: true,
                     variant: isReady
-                        ? SketchButtonVariant.secondary
-                        : SketchButtonVariant.primary,
+                        ? AppButtonVariant.secondary
+                        : AppButtonVariant.primary,
                     busy: _busy,
                     onPressed: () => _toggleReady(!isReady),
                   ),
@@ -193,6 +238,16 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               onInvite: () => _invite(room),
             ),
             const SizedBox(height: AppSpacing.xl),
+            if (isHost) ...<Widget>[
+              _StupidsCard(
+                room: room,
+                seated: players.where((Player player) => player.isBot).length,
+                busy: _busy,
+                onAdd: _addStupids,
+                onClear: _clearStupids,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
             _RulesSummary(room: room),
             const SizedBox(height: AppSpacing.xl),
             // The pushed room snapshot is the list: `s:room:state` arrives on
@@ -215,6 +270,97 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   }
 }
 
+/// PLAY WITH STUPID, in the lobby: fill the empty seats with bots.
+///
+/// Host only, because seating a Stupid changes the room for everybody in it.
+/// Offered here rather than only at room creation because the moment a host
+/// actually wants it is *after* waiting two minutes for a fourth player who
+/// never came — which is a moment that happens in the lobby, not before it.
+class _StupidsCard extends StatelessWidget {
+  const _StupidsCard({
+    required this.room,
+    required this.seated,
+    required this.busy,
+    required this.onAdd,
+    required this.onClear,
+  });
+
+  final Room room;
+
+  /// How many Stupids are already in the room.
+  final int seated;
+
+  final bool busy;
+  final ValueChanged<int> onAdd;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppPalette colors = context.palette;
+    final TextTheme text = Theme.of(context).textTheme;
+    final bool full = room.players.length >= room.settings.maxPlayers;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const BrandMark(size: 32),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      'PLAY WITH ${AppBrandConfig.current.botLabel.toUpperCase()}',
+                      style: text.titleSmall?.copyWith(color: colors.text),
+                    ),
+                    Text(
+                      seated == 0
+                          ? 'Short of players? Add some idiots.'
+                          : '$seated in the room already.',
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              for (final int count in <int>[1, 2, 3])
+                AppButton(
+                  label: '+$count',
+                  variant: AppButtonVariant.primary,
+                  onPressed: busy || full ? null : () => onAdd(count),
+                ),
+              if (seated > 0)
+                AppButton(
+                  label: 'Clear',
+                  icon: Icons.person_remove_outlined,
+                  onPressed: busy ? null : onClear,
+                ),
+            ],
+          ),
+          if (full) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'The room is full.',
+              style: text.bodySmall?.copyWith(color: colors.textMuted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// The share code, big enough to read aloud across a room.
 class _RoomCodeCard extends StatelessWidget {
   const _RoomCodeCard({
@@ -231,21 +377,21 @@ class _RoomCodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         children: <Widget>[
           Text(
             context.l10n.lobbyRoomCode.toUpperCase(),
-            style: text.labelSmall?.copyWith(color: colors.inkSoft),
+            style: text.labelSmall?.copyWith(color: colors.textMuted),
           ),
           const SizedBox(height: AppSpacing.sm),
           SelectableText(
             code,
             style: text.displaySmall?.copyWith(
-              color: colors.ink,
+              color: colors.text,
               letterSpacing: 10,
             ),
           ),
@@ -254,16 +400,16 @@ class _RoomCodeCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Flexible(
-                child: SketchButton(
+                child: AppButton(
                   label: context.l10n.lobbyCopyCode,
                   icon: Icons.copy,
-                  variant: SketchButtonVariant.ghost,
+                  variant: AppButtonVariant.ghost,
                   onPressed: onCopy,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Flexible(
-                child: SketchButton(
+                child: AppButton(
                   label: context.l10n.lobbyInvite,
                   icon: Icons.person_add_alt_1_outlined,
                   onPressed: onInvite,
@@ -285,38 +431,38 @@ class _RulesSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Wrap(
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.sm,
       alignment: WrapAlignment.center,
       children: <Widget>[
-        SketchBadge(
+        HudBadge(
           label: '${room.settings.rounds} rounds',
           icon: Icons.repeat,
           color: colors.accentBlue,
         ),
-        SketchBadge(
+        HudBadge(
           label: '${room.settings.drawTimeSeconds}s',
           icon: Icons.timer_outlined,
           color: colors.accentOrange,
         ),
-        SketchBadge(
+        HudBadge(
           label: '${room.settings.hintCount} hints',
           icon: Icons.lightbulb_outline,
           color: colors.accentYellow,
         ),
-        SketchBadge(
+        HudBadge(
           label: room.settings.wordMode.label,
           icon: Icons.spellcheck,
           color: colors.accentGreen,
         ),
         if (room.settings.isPrivate)
-          SketchBadge(
+          HudBadge(
             label: 'Private',
             icon: Icons.lock_outline,
-            color: colors.inkSoft,
+            color: colors.textMuted,
           ),
       ],
     );

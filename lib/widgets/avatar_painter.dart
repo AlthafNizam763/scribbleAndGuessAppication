@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/widgets/avatar_art.dart';
 
@@ -9,9 +11,17 @@ import 'package:scribble_guess/widgets/avatar_art.dart';
 /// files at all, which is why a face costs nothing to add and never has to be
 /// downloaded before a room can start.
 ///
-/// Order of construction is always the same — shoulders, whatever sits behind
-/// the head, the head, whatever sits in front of it, then the features — so
-/// overlaps read as depth rather than as stacked outlines.
+/// ## Ten cats, one skull
+///
+/// Every character is the same head — [_ears] then [_head] — with a different
+/// expression drawn on it. That is not laziness, it is the brand: these are
+/// meant to read as ten moods of one animal, the one in the app icon, rather
+/// than as ten unrelated drawings. A new cat is a new [AvatarShape] case and a
+/// handful of lines, and it cannot drift out of family because it inherits the
+/// silhouette.
+///
+/// Order of construction is always the same — shoulders, ears, head, then the
+/// features — so overlaps read as depth rather than as stacked outlines.
 class AvatarArtPainter extends CustomPainter {
   /// Paints [face], tracing its outlines [weight] times as thick as the base.
   const AvatarArtPainter({required this.face, this.weight = 1});
@@ -41,24 +51,16 @@ class AvatarArtPainter extends CustomPainter {
     canvas.scale(size.width / box, size.height / box);
 
     final void Function(Canvas canvas) draw = switch (face.shape) {
-      AvatarShape.bowlCut => _bowlCut,
-      AvatarShape.ponytail => _ponytail,
-      AvatarShape.curls => _curls,
-      AvatarShape.ballCap => _ballCap,
-      AvatarShape.topBun => _topBun,
-      AvatarShape.beard => _beard,
-      AvatarShape.cat => _cat,
-      AvatarShape.dog => _dog,
-      AvatarShape.bear => _bear,
-      AvatarShape.fox => _fox,
-      AvatarShape.panda => _panda,
-      AvatarShape.bunny => _bunny,
-      AvatarShape.animeLong => _animeLong,
-      AvatarShape.animeSpiky => _animeSpiky,
-      AvatarShape.animeTwinTails => _animeTwinTails,
-      AvatarShape.animeNinja => _animeNinja,
-      AvatarShape.animeCatGirl => _animeCatGirl,
-      AvatarShape.animeCool => _animeCool,
+      AvatarShape.sleeping => _sleeping,
+      AvatarShape.laughing => _laughing,
+      AvatarShape.angry => _angry,
+      AvatarShape.confused => _confused,
+      AvatarShape.shocked => _shocked,
+      AvatarShape.dancing => _dancing,
+      AvatarShape.lazy => _lazy,
+      AvatarShape.smug => _smug,
+      AvatarShape.scared => _scared,
+      AvatarShape.chaotic => _chaotic,
     };
     draw(canvas);
 
@@ -101,230 +103,74 @@ class AvatarArtPainter extends CustomPainter {
     c.restore();
   }
 
-  /// A deeper [color], for ears and markings that must read against the coat
-  /// they sit on.
-  Color _deepen(Color color, [double amount = 0.24]) =>
-      Color.lerp(color, AvatarPigments.line, amount)!;
-
   // ---------------------------------------------------------------- pieces ---
 
   /// Head and shoulders, cut off by the disc.
-  void _bust(Canvas c, {bool collar = true}) {
+  void _bust(Canvas c) {
     final Path body = Path()
       ..moveTo(4, 104)
       ..cubicTo(9, 86, 28, 76, 50, 76)
       ..cubicTo(72, 76, 91, 86, 96, 104)
       ..close();
     _ink(c, body, face.cloth);
-    if (collar) {
-      final Path neckline = Path()
-        ..moveTo(42, 77)
-        ..quadraticBezierTo(50, 85, 58, 77);
-      c.drawPath(neckline, _pen(0.75));
-    }
   }
 
-  /// The oval a person's face is built on.
-  static final Rect _personFace = Rect.fromCenter(
-    center: const Offset(50, 46),
-    width: 54,
-    height: 58,
-  );
-
-  /// The rounder oval an animal's head is built on.
-  static final Rect _beastFace = Rect.fromCenter(
+  /// The oval every cat's head is built on.
+  static final Rect _skull = Rect.fromCenter(
     center: const Offset(50, 50),
     width: 60,
     height: 56,
   );
 
-  void _personHead(Canvas c) {
+  void _head(Canvas c) => _ink(c, Path()..addOval(_skull), face.fur);
+
+  /// The two ears.
+  ///
+  /// [droop] folds them down — a scared or sleeping cat pins its ears, and it
+  /// is the single strongest signal of mood in the whole drawing, worth more
+  /// than any amount of work on the eyes.
+  void _ears(Canvas c, {double droop = 0}) {
     _mirror(c, (Canvas m) {
+      final double tipX = 27 + droop * 6;
+      final double tipY = 8 + droop * 26;
+
       final Path ear = Path()
-        ..addOval(
-          Rect.fromCenter(
-            center: const Offset(24, 51),
-            width: 10,
-            height: 14,
-          ),
-        );
-      _ink(m, ear, face.skin, 0.85);
+        ..moveTo(24, 40)
+        ..lineTo(tipX, tipY)
+        ..lineTo(48, 27)
+        ..close();
+      _ink(m, ear, face.fur);
+
+      final Path inner = Path()
+        ..moveTo(30, 33)
+        ..lineTo(tipX + 5, tipY + 9)
+        ..lineTo(42, 27)
+        ..close();
+      _ink(m, inner, AvatarPigments.petal, 0.6);
     });
-    _ink(c, Path()..addOval(_personFace), face.skin);
   }
 
-  void _beastHead(Canvas c) => _ink(c, Path()..addOval(_beastFace), face.skin);
-
-  /// The tapered chin an anime face is built on.
-  void _animeHead(Canvas c) {
+  /// Three whiskers a side.
+  void _whiskers(Canvas c, {double y = 53}) {
     _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..addOval(
-          Rect.fromCenter(center: const Offset(25, 48), width: 9, height: 13),
-        );
-      _ink(m, ear, face.skin, 0.8);
-    });
-    final Path head = Path()
-      ..moveTo(24, 42)
-      ..cubicTo(24, 22, 35, 13, 50, 13)
-      ..cubicTo(65, 13, 76, 22, 76, 42)
-      ..cubicTo(76, 61, 64, 77, 50, 77)
-      ..cubicTo(36, 77, 24, 61, 24, 42)
-      ..close();
-    _ink(c, head, face.skin);
-  }
-
-  /// Two round eyes with a catchlight.
-  void _dotEyes(Canvas c, {double y = 49, double dx = 11, double r = 4.6}) {
-    _mirror(c, (Canvas m) {
-      final Offset eye = Offset(50 - dx, y);
-      m.drawCircle(eye, r, _fill(AvatarPigments.line));
-      m.drawCircle(
-        eye.translate(-r * 0.3, -r * 0.34),
-        r * 0.3,
-        _fill(AvatarPigments.light),
-      );
+      for (int i = 0; i < 3; i++) {
+        final double row = y + i * 5;
+        m.drawLine(Offset(29, row), Offset(9, row - 5), _pen(0.7));
+      }
     });
   }
 
-  /// Two tall anime eyes, iris coloured to match the hair.
-  void _animeEyes(
-    Canvas c, {
-    double y = 52,
-    double dx = 12.5,
-    double width = 14,
-    double height = 16,
-  }) {
-    final Color iris = face.hair;
-    _mirror(c, (Canvas m) {
-      final Offset eye = Offset(50 - dx, y);
-      final Rect white = Rect.fromCenter(
-        center: eye,
-        width: width,
-        height: height,
-      );
-      m.drawOval(white, _fill(AvatarPigments.light));
-      m.drawOval(
-        Rect.fromCenter(
-          center: eye.translate(0, 1),
-          width: width * 0.8,
-          height: height * 0.82,
-        ),
-        _fill(iris),
-      );
-      m.drawOval(
-        Rect.fromCenter(
-          center: eye.translate(0, 2),
-          width: width * 0.44,
-          height: height * 0.46,
-        ),
-        _fill(AvatarPigments.line),
-      );
-      m.drawOval(
-        Rect.fromCenter(
-          center: eye.translate(-width * 0.19, -height * 0.21),
-          width: width * 0.32,
-          height: height * 0.3,
-        ),
-        _fill(AvatarPigments.light),
-      );
-      m.drawOval(
-        Rect.fromCenter(
-          center: eye.translate(width * 0.17, height * 0.22),
-          width: width * 0.17,
-          height: height * 0.15,
-        ),
-        _fill(AvatarPigments.light.withValues(alpha: 0.8)),
-      );
-      m.drawOval(white, _pen(0.8));
-      final Path lash = Path()
-        ..moveTo(eye.dx - width * 0.55, eye.dy - height * 0.34)
-        ..quadraticBezierTo(
-          eye.dx,
-          eye.dy - height * 0.8,
-          eye.dx + width * 0.55,
-          eye.dy - height * 0.3,
-        );
-      m.drawPath(lash, _pen(1.2));
-    });
-  }
-
-  /// Two happy closed arcs.
-  void _happyEyes(Canvas c, {double y = 52, double dx = 12, double width = 12}) {
-    _mirror(c, (Canvas m) {
-      final double cx = 50 - dx;
-      final Path arc = Path()
-        ..moveTo(cx - width / 2, y + 3)
-        ..quadraticBezierTo(cx, y - 6, cx + width / 2, y + 3);
-      m.drawPath(arc, _pen(1.25));
-    });
-  }
-
-  /// Straight brows, for a face that needs a little resolve.
-  void _brows(Canvas c, {double y = 40, double dx = 12, double width = 12}) {
-    _mirror(c, (Canvas m) {
-      final double cx = 50 - dx;
-      m.drawLine(
-        Offset(cx - width / 2, y + 2),
-        Offset(cx + width / 2, y - 1),
-        _pen(0.8),
-      );
-    });
-  }
-
-  void _smile(
-    Canvas c, {
-    double y = 62,
-    double width = 13,
-    double depth = 6,
-    double scale = 0.9,
-  }) {
-    final Path mouth = Path()
-      ..moveTo(50 - width / 2, y)
-      ..quadraticBezierTo(50, y + depth, 50 + width / 2, y);
-    c.drawPath(mouth, _pen(scale));
-  }
-
-  /// An open grin with a tongue behind it.
-  void _openSmile(Canvas c, {double y = 62, double width = 17, double depth = 10}) {
-    final Path mouth = Path()
-      ..moveTo(50 - width / 2, y)
-      ..quadraticBezierTo(50, y + depth, 50 + width / 2, y)
-      ..close();
-    c.drawPath(mouth, _fill(AvatarPigments.line));
-    final Path tongue = Path()
-      ..moveTo(50 - width * 0.26, y + depth * 0.42)
-      ..quadraticBezierTo(
-        50,
-        y + depth * 1.02,
-        50 + width * 0.26,
-        y + depth * 0.42,
-      )
-      ..close();
-    c.drawPath(tongue, _fill(AvatarPigments.petal));
-    c.drawPath(mouth, _pen(0.8));
-  }
-
-  /// A muzzle: nose triangle over a two-arc mouth.
-  void _muzzle(Canvas c, {double y = 55, Color? nose, double width = 12}) {
+  /// The little triangular nose.
+  void _nose(Canvas c, {double y = 54, double width = 11}) {
     final Path snout = Path()
       ..moveTo(50 - width / 2, y)
       ..lineTo(50 + width / 2, y)
       ..lineTo(50, y + width * 0.46)
       ..close();
-    _ink(c, snout, nose ?? AvatarPigments.petal, 0.65);
-    final double lip = y + width * 0.46;
-    final Path mouth = Path()
-      ..moveTo(50, lip)
-      ..lineTo(50, lip + 3)
-      ..moveTo(50, lip + 3)
-      ..quadraticBezierTo(45, lip + 7, 40.5, lip + 1.5)
-      ..moveTo(50, lip + 3)
-      ..quadraticBezierTo(55, lip + 7, 59.5, lip + 1.5);
-    c.drawPath(mouth, _pen(0.75));
+    _ink(c, snout, AvatarPigments.petal, 0.65);
   }
 
-  void _blush(Canvas c, {double y = 58, double dx = 20, double width = 11}) {
+  void _blush(Canvas c, {double y = 58, double dx = 21, double width = 11}) {
     final Paint warm = _fill(AvatarPigments.blush.withValues(alpha: 0.42));
     _mirror(c, (Canvas m) {
       m.drawOval(
@@ -338,574 +184,386 @@ class AvatarArtPainter extends CustomPainter {
     });
   }
 
-  /// The one gloss stroke that stops a block of hair reading flat.
-  void _shine(Canvas c, Offset from, Offset to, {double bend = 5}) {
-    final Path gloss = Path()
-      ..moveTo(from.dx, from.dy)
-      ..quadraticBezierTo(
-        (from.dx + to.dx) / 2,
-        (from.dy + to.dy) / 2 - bend,
-        to.dx,
-        to.dy,
-      );
-    c.drawPath(
-      gloss,
-      Paint()
-        ..color = AvatarPigments.light.withValues(alpha: 0.5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = _stroke * weight * 1.3
-        ..strokeCap = StrokeCap.round
-        ..isAntiAlias = true,
-    );
-  }
+  // ------------------------------------------------------------------ eyes ---
 
-  // ---------------------------------------------------------------- people ---
-
-  void _bowlCut(Canvas c) {
-    _bust(c);
-    _personHead(c);
-    final Path hair = Path()
-      ..moveTo(21, 47)
-      ..cubicTo(19, 23, 33, 14, 50, 14)
-      ..cubicTo(67, 14, 81, 23, 79, 47)
-      ..cubicTo(76, 38, 70, 34, 62, 34)
-      ..cubicTo(56, 34, 53, 38, 45, 38)
-      ..cubicTo(35, 38, 27, 40, 21, 47)
-      ..close();
-    _ink(c, hair, face.hair);
-    _shine(c, const Offset(32, 27), const Offset(46, 20), bend: 4);
-    _dotEyes(c, y: 50);
-    _blush(c, y: 58);
-    _smile(c, y: 62);
-  }
-
-  void _ponytail(Canvas c) {
-    _bust(c);
-    final Path tail = Path()
-      ..moveTo(70, 28)
-      ..cubicTo(88, 24, 96, 40, 91, 56)
-      ..cubicTo(87, 69, 75, 68, 71, 57)
-      ..close();
-    _ink(c, tail, face.hair);
-    _personHead(c);
-    final Path hair = Path()
-      ..moveTo(21, 46)
-      ..cubicTo(19, 22, 34, 13, 51, 13)
-      ..cubicTo(68, 13, 82, 23, 79, 46)
-      ..cubicTo(77, 33, 67, 28, 55, 31)
-      ..cubicTo(45, 34, 33, 32, 26, 41)
-      ..cubicTo(24, 43, 22, 45, 21, 46)
-      ..close();
-    _ink(c, hair, face.hair);
-    final Path band = Path()
-      ..addOval(Rect.fromCircle(center: const Offset(73, 33), radius: 5));
-    _ink(c, band, face.trim ?? _deepen(face.hair), 0.75);
-    _shine(c, const Offset(34, 24), const Offset(48, 19), bend: 4);
-    _dotEyes(c, y: 50);
-    _blush(c, y: 58);
-    _smile(c, y: 62);
-  }
-
-  void _curls(Canvas c) {
-    _bust(c);
-    Path halo = Path();
-    for (final Offset knot in const <Offset>[
-      Offset(25, 36),
-      Offset(28, 22),
-      Offset(41, 13),
-      Offset(57, 13),
-      Offset(70, 20),
-      Offset(76, 34),
-    ]) {
-      halo = Path.combine(
-        PathOperation.union,
-        halo,
-        Path()..addOval(Rect.fromCircle(center: knot, radius: 13)),
-      );
-    }
-    _ink(c, halo, face.hair);
-    _personHead(c);
-    Path fringe = Path();
-    for (final Offset knot in const <Offset>[
-      Offset(28, 31),
-      Offset(40, 24),
-      Offset(53, 23),
-      Offset(65, 26),
-      Offset(74, 34),
-    ]) {
-      fringe = Path.combine(
-        PathOperation.union,
-        fringe,
-        Path()..addOval(Rect.fromCircle(center: knot, radius: 12)),
-      );
-    }
-    _ink(c, fringe, face.hair);
-    _dotEyes(c, y: 51);
-    _blush(c, y: 59);
-    _smile(c, y: 63);
-  }
-
-  void _ballCap(Canvas c) {
-    _bust(c);
-    _personHead(c);
-    final Path hair = Path()
-      ..moveTo(21, 50)
-      ..cubicTo(21, 38, 26, 33, 34, 33)
-      ..lineTo(66, 33)
-      ..cubicTo(74, 33, 79, 38, 79, 50)
-      ..cubicTo(76, 43, 70, 41, 62, 42)
-      ..lineTo(38, 42)
-      ..cubicTo(30, 41, 24, 43, 21, 50)
-      ..close();
-    _ink(c, hair, face.hair);
-    final Color cap = face.trim ?? AvatarPigments.clothDenim;
-    final Path dome = Path()
-      ..moveTo(20, 39)
-      ..cubicTo(20, 17, 34, 9, 50, 9)
-      ..cubicTo(66, 9, 80, 17, 80, 39)
-      ..close();
-    _ink(c, dome, cap);
-    final Path brim = Path()
-      ..moveTo(48, 36)
-      ..cubicTo(26, 35, 9, 39, 8, 45)
-      ..cubicTo(10, 49, 28, 45, 48, 43)
-      ..close();
-    _ink(c, brim, cap, 0.9);
-    final Path button = Path()
-      ..addOval(Rect.fromCircle(center: const Offset(50, 10), radius: 3.4));
-    _ink(c, button, cap, 0.7);
-    _dotEyes(c, y: 52);
-    _blush(c, y: 60);
-    _smile(c, y: 64);
-  }
-
-  void _topBun(Canvas c) {
-    _bust(c);
-    final Path bun = Path()
-      ..addOval(Rect.fromCircle(center: const Offset(50, 12), radius: 10));
-    _ink(c, bun, face.hair);
-    _personHead(c);
-    final Path hair = Path()
-      ..moveTo(21, 45)
-      ..cubicTo(20, 22, 34, 13, 50, 13)
-      ..cubicTo(66, 13, 80, 22, 79, 45)
-      ..cubicTo(75, 32, 64, 27, 50, 27)
-      ..cubicTo(36, 27, 25, 32, 21, 45)
-      ..close();
-    _ink(c, hair, face.hair);
-    _shine(c, const Offset(32, 30), const Offset(43, 21), bend: 3);
-    _dotEyes(c, y: 50, dx: 12, r: 3.8);
-    _blush(c, y: 60, dx: 21);
-    _smile(c, y: 64);
-    // Glasses last: they sit on top of the face, lenses included.
+  /// Two round eyes with a catchlight. [r] carries most of the mood.
+  void _dotEyes(Canvas c, {double y = 47, double dx = 12, double r = 4.6}) {
     _mirror(c, (Canvas m) {
-      final Rect lens = Rect.fromCenter(
-        center: const Offset(38, 50),
-        width: 18,
-        height: 17,
+      final Offset eye = Offset(50 - dx, y);
+      m.drawCircle(eye, r, _fill(AvatarPigments.line));
+      m.drawCircle(
+        eye.translate(-r * 0.3, -r * 0.34),
+        r * 0.3,
+        _fill(AvatarPigments.light),
       );
-      m.drawOval(lens, _fill(AvatarPigments.light.withValues(alpha: 0.28)));
-      m.drawOval(lens, _pen(0.85));
-      m.drawLine(const Offset(29, 48), const Offset(21, 49), _pen(0.8));
     });
-    c.drawLine(const Offset(47, 49), const Offset(53, 49), _pen(0.8));
   }
 
-  void _beard(Canvas c) {
-    _bust(c);
-    _personHead(c);
-    final Path whiskers = Path()
-      ..moveTo(23, 42)
-      ..cubicTo(21, 66, 33, 84, 50, 84)
-      ..cubicTo(67, 84, 79, 66, 77, 42)
-      ..cubicTo(74, 56, 65, 62, 50, 62)
-      ..cubicTo(35, 62, 26, 56, 23, 42)
-      ..close();
-    _ink(c, whiskers, face.hair);
-    final Path hair = Path()
-      ..moveTo(22, 44)
-      ..cubicTo(21, 22, 35, 14, 50, 14)
-      ..cubicTo(65, 14, 79, 22, 78, 44)
-      ..cubicTo(74, 32, 63, 28, 50, 28)
-      ..cubicTo(37, 28, 26, 32, 22, 44)
-      ..close();
-    _ink(c, hair, face.hair);
-    _dotEyes(c, y: 47);
-    final Path moustache = Path()
-      ..moveTo(36, 57)
-      ..cubicTo(42, 51, 47, 54, 50, 56)
-      ..cubicTo(53, 54, 58, 51, 64, 57)
-      ..cubicTo(57, 63, 43, 63, 36, 57)
-      ..close();
-    _ink(c, moustache, face.hair, 0.8);
+  /// Wide eyes with a visible white, for shock and fear.
+  void _wideEyes(Canvas c, {double y = 46, double dx = 12, double r = 8}) {
+    _mirror(c, (Canvas m) {
+      final Offset eye = Offset(50 - dx, y);
+      m.drawCircle(eye, r, _fill(AvatarPigments.light));
+      m.drawCircle(eye, r, _pen(0.6));
+      m.drawCircle(eye.translate(0, 1), r * 0.42, _fill(AvatarPigments.line));
+    });
   }
 
-  // --------------------------------------------------------------- animals ---
-
-  void _cat(Canvas c) {
-    _bust(c, collar: false);
+  /// Arcs opening downward: eyes shut in delight.
+  void _happyEyes(Canvas c, {double y = 47, double dx = 12, double width = 13}) {
     _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..moveTo(24, 40)
-        ..lineTo(27, 8)
-        ..lineTo(48, 27)
-        ..close();
-      _ink(m, ear, face.skin);
-      final Path inner = Path()
-        ..moveTo(30, 33)
-        ..lineTo(32, 17)
-        ..lineTo(42, 27)
-        ..close();
-      _ink(m, inner, face.hair, 0.6);
+      final double cx = 50 - dx;
+      final Path arc = Path()
+        ..moveTo(cx - width / 2, y + 4)
+        ..quadraticBezierTo(cx, y - 6, cx + width / 2, y + 4);
+      m.drawPath(arc, _pen(1.2));
     });
-    _beastHead(c);
-    _dotEyes(c, y: 47, dx: 12);
-    _mirror(c, (Canvas m) {
-      for (final double y in <double>[53, 58, 63]) {
-        m.drawLine(Offset(29, y), Offset(9, y - 5), _pen(0.7));
-      }
-    });
-    _muzzle(c, y: 54);
-    _blush(c, y: 56, dx: 22);
   }
 
-  void _dog(Canvas c) {
-    _bust(c, collar: false);
+  /// Flat closed lids: asleep, not laughing.
+  void _shutEyes(Canvas c, {double y = 47, double dx = 12, double width = 13}) {
     _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..moveTo(29, 27)
-        ..cubicTo(13, 25, 7, 44, 11, 58)
-        ..cubicTo(15, 70, 31, 68, 33, 53)
-        ..close();
-      _ink(m, ear, _deepen(face.skin));
+      final double cx = 50 - dx;
+      final Path arc = Path()
+        ..moveTo(cx - width / 2, y - 2)
+        ..quadraticBezierTo(cx, y + 5, cx + width / 2, y - 2);
+      m.drawPath(arc, _pen(1.2));
     });
-    _beastHead(c);
-    final Path patch = Path()
-      ..addOval(
-        Rect.fromCenter(center: const Offset(50, 60), width: 34, height: 25),
+  }
+
+  /// Half-lidded: a lid drawn across an open eye.
+  void _lidEyes(Canvas c, {double y = 47, double dx = 12, double r = 5}) {
+    _mirror(c, (Canvas m) {
+      final Offset eye = Offset(50 - dx, y);
+      m.drawCircle(eye, r, _fill(AvatarPigments.line));
+      // The lid, in coat colour, clipping the top half off the eye.
+      m.drawRect(
+        Rect.fromLTRB(eye.dx - r - 1, y - r - 1, eye.dx + r + 1, y - r * 0.15),
+        _fill(face.fur),
       );
-    _ink(c, patch, face.hair, 0.85);
-    _dotEyes(c, y: 44, dx: 11);
+      m.drawLine(
+        Offset(eye.dx - r - 1, y - r * 0.15),
+        Offset(eye.dx + r + 1, y - r * 0.15),
+        _pen(0.9),
+      );
+    });
+  }
+
+  /// Brows. [angle] tilts them: negative is cross, positive is worried.
+  void _brows(Canvas c, {double y = 36, double dx = 12, double width = 13, double angle = 0}) {
+    _mirror(c, (Canvas m) {
+      final double cx = 50 - dx;
+      m.drawLine(
+        Offset(cx - width / 2, y - angle),
+        Offset(cx + width / 2, y + angle),
+        _pen(0.95),
+      );
+    });
+  }
+
+  // ---------------------------------------------------------------- mouths ---
+
+  /// A closed curve. Negative [depth] is a frown.
+  void _mouth(Canvas c, {double y = 62, double width = 13, double depth = 6, double scale = 0.9}) {
+    final Path path = Path()
+      ..moveTo(50 - width / 2, y)
+      ..quadraticBezierTo(50, y + depth, 50 + width / 2, y);
+    c.drawPath(path, _pen(scale));
+  }
+
+  /// An open mouth, with a tongue. The house laugh.
+  void _openMouth(Canvas c, {double y = 60, double width = 20, double height = 14}) {
+    final Path maw = Path()
+      ..addOval(Rect.fromCenter(center: Offset(50, y + height / 2), width: width, height: height));
+    _ink(c, maw, AvatarPigments.maw, 0.7);
+
     final Path tongue = Path()
-      ..moveTo(45, 62)
-      ..cubicTo(44, 73, 56, 73, 55, 62)
-      ..close();
-    _ink(c, tongue, AvatarPigments.petal, 0.7);
-    final Path nose = Path()
       ..addOval(
-        Rect.fromCenter(center: const Offset(50, 53), width: 14, height: 10),
-      );
-    _ink(c, nose, AvatarPigments.line, 0.6);
-    final Path mouth = Path()
-      ..moveTo(50, 58)
-      ..lineTo(50, 61)
-      ..moveTo(50, 61)
-      ..quadraticBezierTo(44, 66, 40, 60)
-      ..moveTo(50, 61)
-      ..quadraticBezierTo(56, 66, 60, 60);
-    c.drawPath(mouth, _pen(0.75));
-  }
-
-  void _bear(Canvas c) {
-    _bust(c, collar: false);
-    _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..addOval(Rect.fromCircle(center: const Offset(26, 21), radius: 12));
-      _ink(m, ear, face.skin);
-      final Path inner = Path()
-        ..addOval(Rect.fromCircle(center: const Offset(26, 22), radius: 6));
-      _ink(m, inner, AvatarPigments.petal, 0.6);
-    });
-    _beastHead(c);
-    final Path snout = Path()
-      ..addOval(
-        Rect.fromCenter(center: const Offset(50, 60), width: 31, height: 23),
-      );
-    _ink(c, snout, face.hair, 0.85);
-    _dotEyes(c, y: 45, dx: 11);
-    _muzzle(c, y: 52, nose: AvatarPigments.line, width: 13);
-  }
-
-  void _fox(Canvas c) {
-    _bust(c, collar: false);
-    _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..moveTo(22, 41)
-        ..lineTo(23, 6)
-        ..lineTo(47, 26)
-        ..close();
-      _ink(m, ear, face.skin);
-      final Path inner = Path()
-        ..moveTo(28, 33)
-        ..lineTo(29, 15)
-        ..lineTo(41, 26)
-        ..close();
-      _ink(m, inner, AvatarPigments.furSoot, 0.6);
-    });
-    _beastHead(c);
-    final Path mask = Path()
-      ..moveTo(22, 47)
-      ..cubicTo(30, 43, 41, 48, 50, 48)
-      ..cubicTo(59, 48, 70, 43, 78, 47)
-      ..cubicTo(76, 65, 64, 78, 50, 78)
-      ..cubicTo(36, 78, 24, 65, 22, 47)
-      ..close();
-    _ink(c, mask, face.hair, 0.85);
-    _dotEyes(c, y: 44, dx: 12);
-    final Path nose = Path()
-      ..moveTo(43, 58)
-      ..lineTo(57, 58)
-      ..lineTo(50, 66)
-      ..close();
-    _ink(c, nose, AvatarPigments.furSoot, 0.65);
-    _smile(c, y: 69, width: 11, depth: 4);
-  }
-
-  void _panda(Canvas c) {
-    _bust(c, collar: false);
-    _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..addOval(Rect.fromCircle(center: const Offset(25, 20), radius: 11.5));
-      _ink(m, ear, face.hair);
-    });
-    _beastHead(c);
-    _mirror(c, (Canvas m) {
-      m.save();
-      m.translate(36, 47);
-      m.rotate(-0.3);
-      final Path patch = Path()
-        ..addOval(
-          Rect.fromCenter(center: Offset.zero, width: 20, height: 24),
-        );
-      _ink(m, patch, face.hair, 0.6);
-      m.restore();
-      m.drawCircle(const Offset(36, 47), 5.4, _fill(AvatarPigments.light));
-      m.drawCircle(const Offset(37, 47.5), 2.9, _fill(AvatarPigments.line));
-    });
-    _muzzle(c, y: 58, nose: AvatarPigments.furSoot, width: 11);
-  }
-
-  void _bunny(Canvas c) {
-    _bust(c, collar: false);
-    _mirror(c, (Canvas m) {
-      m.save();
-      m.translate(37, 26);
-      m.rotate(-0.15);
-      final Path ear = Path()
-        ..addRRect(
-          RRect.fromRectXY(
-            Rect.fromCenter(center: Offset.zero, width: 15, height: 44),
-            7.5,
-            13,
-          ),
-        );
-      _ink(m, ear, face.skin, 0.85);
-      final Path inner = Path()
-        ..addRRect(
-          RRect.fromRectXY(
-            Rect.fromCenter(center: const Offset(0, 2), width: 7, height: 32),
-            3.5,
-            9,
-          ),
-        );
-      _ink(m, inner, face.hair, 0.55);
-      m.restore();
-    });
-    _beastHead(c);
-    _dotEyes(c, y: 48, dx: 12);
-    final Path nose = Path()
-      ..moveTo(45.5, 56)
-      ..lineTo(54.5, 56)
-      ..lineTo(50, 60.5)
-      ..close();
-    _ink(c, nose, face.hair, 0.6);
-    final Path lip = Path()
-      ..moveTo(50, 60.5)
-      ..lineTo(50, 63)
-      ..moveTo(50, 63)
-      ..quadraticBezierTo(45, 67, 41, 61.5)
-      ..moveTo(50, 63)
-      ..quadraticBezierTo(55, 67, 59, 61.5);
-    c.drawPath(lip, _pen(0.75));
-    final Path teeth = Path()
-      ..addRRect(
-        RRect.fromRectXY(
-          Rect.fromCenter(center: const Offset(50, 68), width: 12, height: 10),
-          2.5,
-          2.5,
+        Rect.fromCenter(
+          center: Offset(50, y + height * 0.78),
+          width: width * 0.52,
+          height: height * 0.42,
         ),
       );
-    _ink(c, teeth, AvatarPigments.light, 0.6);
-    c.drawLine(const Offset(50, 63.5), const Offset(50, 72.5), _pen(0.6));
-    _blush(c, y: 55, dx: 22);
+    c.drawPath(tongue, _fill(AvatarPigments.petal));
   }
 
-  // ----------------------------------------------------------------- anime ---
-
-  void _animeLong(Canvas c) {
-    _bust(c);
-    final Path back = Path()
-      ..moveTo(50, 8)
-      ..cubicTo(26, 8, 14, 26, 15, 50)
-      ..cubicTo(16, 70, 12, 86, 9, 104)
-      ..lineTo(91, 104)
-      ..cubicTo(88, 86, 84, 70, 85, 50)
-      ..cubicTo(86, 26, 74, 8, 50, 8)
-      ..close();
-    _ink(c, back, face.hair);
-    _animeHead(c);
-    final Path fringe = Path()
-      ..moveTo(23, 44)
-      ..cubicTo(22, 21, 34, 10, 50, 10)
-      ..cubicTo(66, 10, 78, 21, 77, 44)
-      ..lineTo(72, 30)
-      ..lineTo(64, 43)
-      ..lineTo(57, 27)
-      ..lineTo(47, 43)
-      ..lineTo(41, 28)
-      ..lineTo(31, 44)
-      ..close();
-    _ink(c, fringe, face.hair);
-    _shine(c, const Offset(32, 26), const Offset(50, 19), bend: 4);
-    _animeEyes(c, y: 53);
-    _blush(c, y: 63, dx: 21);
-    _smile(c, y: 67, width: 9, depth: 4);
+  /// The two lines under the nose every closed-mouth cat has.
+  void _lips(Canvas c, {double y = 59}) {
+    final Path path = Path()
+      ..moveTo(50, y)
+      ..lineTo(50, y + 3)
+      ..moveTo(50, y + 3)
+      ..quadraticBezierTo(45, y + 7, 40.5, y + 1.5)
+      ..moveTo(50, y + 3)
+      ..quadraticBezierTo(55, y + 7, 59.5, y + 1.5);
+    c.drawPath(path, _pen(0.75));
   }
 
-  void _animeSpiky(Canvas c) {
+  // ---------------------------------------------------------------- the ten ---
+
+  /// Sleeping: ears down, eyes shut, and a `z` floating off.
+  void _sleeping(Canvas c) {
     _bust(c);
-    _animeHead(c);
-    final Path spikes = Path()
-      ..moveTo(22, 46)
-      ..lineTo(18, 26)
-      ..lineTo(31, 32)
-      ..lineTo(30, 10)
-      ..lineTo(44, 26)
-      ..lineTo(51, 6)
-      ..lineTo(61, 25)
-      ..lineTo(71, 12)
-      ..lineTo(73, 31)
-      ..lineTo(84, 25)
-      ..lineTo(78, 46)
-      ..cubicTo(74, 36, 62, 38, 50, 37)
-      ..cubicTo(38, 38, 26, 36, 22, 46)
-      ..close();
-    _ink(c, spikes, face.hair);
-    _brows(c, y: 46, dx: 12.5);
-    _animeEyes(c, y: 54, height: 14);
-    _smile(c, y: 67, width: 12, depth: 5);
+    _ears(c, droop: 0.55);
+    _head(c);
+    _shutEyes(c);
+    _whiskers(c);
+    _nose(c);
+    _lips(c);
+    _snore(c);
   }
 
-  void _animeTwinTails(Canvas c) {
+  /// The `Z` of a sleeping cat, as three strokes.
+  ///
+  /// Drawn rather than typeset, like everything else in this file. A
+  /// `TextPainter` inside a painter renders whatever font happens to be
+  /// ambient — which in a test environment is none at all, and the glyph comes
+  /// out as a filled box. Geometry has no such dependency.
+  void _snore(Canvas c) {
+    final Path z = Path()
+      ..moveTo(74, 14)
+      ..lineTo(88, 14)
+      ..lineTo(74, 28)
+      ..lineTo(88, 28);
+    c.drawPath(z, _pen(0.9));
+  }
+
+  /// Laughing: the app icon's own face.
+  void _laughing(Canvas c) {
     _bust(c);
+    _ears(c);
+    _head(c);
+    _happyEyes(c);
+    _whiskers(c);
+    _nose(c, y: 50);
+    _openMouth(c, y: 57);
+    _blush(c, y: 56);
+  }
+
+  /// Angry: pinned ears, slanted brows, a hard frown.
+  void _angry(Canvas c) {
+    _bust(c);
+    _ears(c, droop: 0.25);
+    _head(c);
+    _brows(c, y: 36, angle: 4.5);
+    // Whites rather than plain dots: this is the darkest coat on the roster,
+    // and ink-on-ink loses the eyes entirely at row size. The brows carry the
+    // mood regardless, so the extra contrast costs nothing.
+    _wideEyes(c, y: 47, r: 5.6);
+    _whiskers(c);
+    _nose(c);
+    // Negative depth: the same curve, upside down.
+    _mouth(c, y: 66, depth: -5);
+  }
+
+  /// Confused: head tilted, one brow up, mouth off to one side.
+  void _confused(Canvas c) {
+    _bust(c);
+
+    // The whole head leans, which is what reads as "confused" before any of
+    // the features do. Rotated about the chin so the neck does not detach.
+    c.save();
+    c.translate(50, 76);
+    c.rotate(-0.13);
+    c.translate(-50, -76);
+
+    _ears(c);
+    _head(c);
+
+    // Asymmetric brows, so they are drawn individually rather than mirrored.
+    c.drawLine(const Offset(31, 38), const Offset(44, 33), _pen(0.95));
+    c.drawLine(const Offset(56, 34), const Offset(69, 36), _pen(0.95));
+
+    _dotEyes(c, y: 47, r: 4.4);
+    _whiskers(c);
+    _nose(c);
+
+    // A mouth that gives up halfway across.
+    final Path mouth = Path()
+      ..moveTo(43, 64)
+      ..quadraticBezierTo(50, 68, 57, 62);
+    c.drawPath(mouth, _pen(0.9));
+
+    c.restore();
+
+    // The question mark sits outside the tilt, so it stays upright. Drawn as
+    // a hook and a dot for the same reason the snore is drawn: a typeset glyph
+    // depends on whatever font is ambient.
+    final Path hook = Path()
+      ..moveTo(75, 16)
+      ..cubicTo(75, 8, 89, 8, 88, 16)
+      ..cubicTo(87, 22, 82, 22, 82, 27);
+    c.drawPath(hook, _pen(0.9));
+    c.drawCircle(const Offset(82, 33), 1.9, _fill(AvatarPigments.line));
+  }
+
+  /// Shocked: enormous eyes and a tiny mouth.
+  void _shocked(Canvas c) {
+    _bust(c);
+    _ears(c);
+    _head(c);
+    _brows(c, y: 31, angle: -2);
+    _wideEyes(c, y: 46, dx: 13, r: 8.5);
+    _whiskers(c, y: 56);
+    _nose(c, y: 57, width: 9);
+
+    // A small O. Round, not a curve: surprise is a shape, not a line.
+    c.drawCircle(const Offset(50, 68), 4.2, _fill(AvatarPigments.maw));
+    c.drawCircle(const Offset(50, 68), 4.2, _pen(0.6));
+  }
+
+  /// Dancing: eyes shut in bliss, head tilted, music alongside.
+  void _dancing(Canvas c) {
+    _bust(c);
+
+    c.save();
+    c.translate(50, 76);
+    c.rotate(0.15);
+    c.translate(-50, -76);
+
+    _ears(c);
+    _head(c);
+    _happyEyes(c, y: 46);
+    _whiskers(c);
+    _nose(c, y: 52);
+    _openMouth(c, y: 59, width: 16, height: 11);
+    _blush(c, y: 57);
+
+    c.restore();
+
+    // A quaver: stem, flag and head, drawn rather than typeset.
+    final Color ink = face.trim ?? AvatarPigments.line;
+    final Paint stem = Paint()
+      ..color = ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _stroke * weight * 0.85
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    c.drawLine(const Offset(86, 12), const Offset(86, 30), stem);
+    c.drawPath(
+      Path()
+        ..moveTo(86, 12)
+        ..quadraticBezierTo(94, 15, 92, 22),
+      stem,
+    );
+    c.drawCircle(const Offset(82, 31), 4, _fill(ink));
+  }
+
+  /// Lazy: half-lidded eyes and a yawn.
+  void _lazy(Canvas c) {
+    _bust(c);
+    _ears(c, droop: 0.3);
+    _head(c);
+    _lidEyes(c, y: 46);
+    _whiskers(c);
+    _nose(c, y: 52);
+    // A tall, narrow mouth: a yawn rather than a laugh.
+    _openMouth(c, y: 57, width: 14, height: 17);
+  }
+
+  /// Smug: narrowed eyes and a one-sided smirk.
+  void _smug(Canvas c) {
+    _bust(c);
+    _ears(c);
+    _head(c);
+
+    // Narrow slits rather than lids: half closed, and enjoying it.
     _mirror(c, (Canvas m) {
-      final Path tail = Path()
-        ..moveTo(29, 25)
-        ..cubicTo(10, 24, 4, 46, 9, 64)
-        ..cubicTo(13, 78, 26, 76, 26, 61)
-        ..cubicTo(26, 47, 27, 34, 33, 29)
-        ..close();
-      _ink(m, tail, face.hair);
+      m.drawLine(const Offset(32, 46), const Offset(45, 44), _pen(1.2));
     });
-    _animeHead(c);
-    final Path hair = Path()
-      ..moveTo(23, 45)
-      ..cubicTo(22, 20, 34, 10, 50, 10)
-      ..cubicTo(66, 10, 78, 20, 77, 45)
-      ..cubicTo(72, 30, 62, 26, 50, 26)
-      ..cubicTo(44, 26, 40, 31, 38, 39)
-      ..cubicTo(34, 34, 27, 36, 23, 45)
-      ..close();
-    _ink(c, hair, face.hair);
-    _mirror(c, (Canvas m) {
-      final Path ribbon = Path()
-        ..addOval(Rect.fromCircle(center: const Offset(28, 26), radius: 6.5));
-      _ink(m, ribbon, face.trim ?? AvatarPigments.clothBerry, 0.7);
-    });
-    _shine(c, const Offset(38, 21), const Offset(56, 18), bend: 3);
-    _animeEyes(c, y: 53);
-    _blush(c, y: 63, dx: 21);
-    _smile(c, y: 67, width: 9, depth: 4);
+
+    _whiskers(c);
+    _nose(c);
+
+    // One corner lifts and the other does not. Drawn asymmetrically on
+    // purpose — a mirrored smirk is just a smile.
+    final Path smirk = Path()
+      ..moveTo(41, 63)
+      ..quadraticBezierTo(50, 67, 60, 59);
+    c.drawPath(smirk, _pen(1));
+
+    if (face.trim != null) {
+      // A collar tag, because this one would absolutely wear one.
+      c.drawCircle(const Offset(50, 84), 5, _fill(face.trim!));
+      c.drawCircle(const Offset(50, 84), 5, _pen(0.6));
+    }
   }
 
-  void _animeNinja(Canvas c) {
+  /// Scared: pinned ears, huge eyes, a wobbling frown.
+  void _scared(Canvas c) {
     _bust(c);
-    _animeHead(c);
-    final Path hair = Path()
-      ..moveTo(22, 46)
-      ..cubicTo(21, 20, 34, 10, 50, 10)
-      ..cubicTo(66, 10, 79, 20, 78, 46)
-      ..cubicTo(74, 36, 62, 32, 50, 32)
-      ..cubicTo(38, 32, 26, 36, 22, 46)
-      ..close();
-    _ink(c, hair, face.hair);
-    final Color band = face.trim ?? AvatarPigments.clothCoral;
-    final Path ribbon = Path()
+    _ears(c, droop: 0.5);
+    _head(c);
+    _brows(c, y: 33, angle: -4);
+    _wideEyes(c, y: 47, dx: 12, r: 7.5);
+    _whiskers(c, y: 56);
+    _nose(c, y: 57, width: 9);
+
+    // A wavy line: a mouth that cannot hold still.
+    final Path wobble = Path()..moveTo(41, 68);
+    for (int i = 0; i < 3; i++) {
+      final double x = 41 + (i + 1) * 6;
+      wobble.quadraticBezierTo(x - 3, 68 + (i.isEven ? 4 : -4), x, 68);
+    }
+    c.drawPath(wobble, _pen(0.85));
+
+    // A sweat drop, which is the whole gag.
+    final Path drop = Path()
       ..moveTo(74, 30)
-      ..cubicTo(84, 25, 88, 30, 92, 26)
-      ..cubicTo(89, 38, 82, 40, 75, 39)
+      ..cubicTo(79, 38, 80, 44, 74, 44)
+      ..cubicTo(68, 44, 69, 38, 74, 30)
       ..close();
-    _ink(c, ribbon, band, 0.8);
-    final Path headband = Path()
-      ..moveTo(21, 40)
-      ..cubicTo(30, 32, 70, 32, 79, 40)
-      ..lineTo(79, 30)
-      ..cubicTo(70, 22, 30, 22, 21, 30)
-      ..close();
-    _ink(c, headband, band);
-    _animeEyes(c, y: 55, height: 13);
-    _smile(c, y: 68, width: 11, depth: 4);
+    _ink(c, drop, AvatarPigments.light, 0.55);
   }
 
-  void _animeCatGirl(Canvas c) {
+  /// Chaotic: mismatched eyes, a manic grin, fur out of control.
+  void _chaotic(Canvas c) {
     _bust(c);
+
+    // Tufts sticking out behind the head, drawn first so they read as behind.
     _mirror(c, (Canvas m) {
-      final Path ear = Path()
-        ..moveTo(28, 30)
-        ..lineTo(30, 6)
-        ..lineTo(49, 25)
-        ..close();
-      _ink(m, ear, face.hair);
-      final Path inner = Path()
-        ..moveTo(33, 26)
-        ..lineTo(34, 14)
-        ..lineTo(44, 24)
-        ..close();
-      _ink(m, inner, face.trim ?? AvatarPigments.petal, 0.55);
+      for (final double angle in <double>[0.4, 0.9, 1.4]) {
+        final Offset from = Offset(
+          50 - math.cos(angle) * 30,
+          50 - math.sin(angle) * 27,
+        );
+        final Offset to = Offset(
+          50 - math.cos(angle) * 44,
+          50 - math.sin(angle) * 40,
+        );
+        m.drawLine(from, to, _pen(0.9));
+      }
     });
-    _animeHead(c);
-    final Path bob = Path()
-      ..moveTo(21, 60)
-      ..cubicTo(19, 30, 32, 13, 50, 13)
-      ..cubicTo(68, 13, 81, 30, 79, 60)
-      ..cubicTo(76, 52, 74, 46, 73, 40)
-      ..cubicTo(70, 45, 62, 45, 57, 40)
-      ..cubicTo(53, 46, 44, 46, 40, 40)
-      ..cubicTo(35, 45, 29, 45, 27, 40)
-      ..cubicTo(26, 48, 24, 54, 21, 60)
-      ..close();
-    _ink(c, bob, face.hair);
-    _shine(c, const Offset(34, 24), const Offset(52, 19), bend: 4);
-    _animeEyes(c, y: 54);
-    _blush(c, y: 64, dx: 21);
-    _smile(c, y: 68, width: 9, depth: 4);
-  }
 
-  void _animeCool(Canvas c) {
-    _bust(c);
-    _animeHead(c);
-    final Path sweep = Path()
-      ..moveTo(21, 44)
-      ..cubicTo(20, 20, 34, 10, 50, 10)
-      ..cubicTo(68, 10, 80, 22, 78, 44)
-      ..cubicTo(76, 34, 70, 28, 62, 26)
-      ..cubicTo(52, 36, 38, 42, 24, 38)
-      ..cubicTo(22, 40, 21, 42, 21, 44)
-      ..close();
-    _ink(c, sweep, face.hair);
-    _shine(c, const Offset(34, 22), const Offset(52, 17), bend: 4);
-    _happyEyes(c, y: 54);
-    _openSmile(c, y: 63);
-    _blush(c, y: 61, dx: 23);
+    _ears(c);
+    _head(c);
+
+    // Mismatched: one enormous, one a pinprick. Drawn individually, because
+    // the entire joke is that they do not match.
+    c.drawCircle(const Offset(38, 46), 8, _fill(AvatarPigments.light));
+    c.drawCircle(const Offset(38, 46), 8, _pen(0.6));
+    c.drawCircle(const Offset(38, 47), 3, _fill(AvatarPigments.line));
+
+    c.drawCircle(const Offset(62, 46), 6, _fill(AvatarPigments.light));
+    c.drawCircle(const Offset(62, 46), 6, _pen(0.6));
+    c.drawCircle(const Offset(63, 45), 5, _fill(AvatarPigments.line));
+
+    _whiskers(c, y: 55);
+    _nose(c, y: 55, width: 9);
+
+    // A wide grin with teeth.
+    final Path grin = Path()
+      ..addOval(Rect.fromCenter(center: const Offset(50, 68), width: 26, height: 13));
+    _ink(c, grin, AvatarPigments.maw, 0.7);
+
+    // Clipped to the grin, so the teeth sit inside the mouth rather than
+    // floating as a bar across it.
+    c.save();
+    c.clipPath(grin);
+    c.drawRect(const Rect.fromLTWH(36, 62, 28, 4), _fill(AvatarPigments.light));
+    c.restore();
   }
 }
+

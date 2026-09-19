@@ -359,14 +359,48 @@ void main() {
   });
 
   group('the asset table', () {
-    test('every effect names a distinct file under assets/sounds', () {
+    /// Every folder the sound system is allowed to read from.
+    ///
+    /// The shared set, plus one per game. A folder that appears in the enum
+    /// and not here is a folder nobody declared in `pubspec.yaml`, which ships
+    /// no files at all and fails silently at runtime — the effect simply never
+    /// plays. That is the failure this list exists to turn into a red test.
+    const Set<String> folders = <String>{
+      'sounds',
+      'kazhutha/audio',
+      'bluff_bar/audio',
+      'space_mystery/audio',
+      'ludo/audio',
+    };
+
+    test('every effect names a distinct file in a declared folder', () {
       final Set<String> paths = <String>{
         for (final SoundEffect effect in SoundEffect.values) effect.asset,
       };
+
+      // Distinct *paths*, not distinct file names: each game has its own
+      // `click`, and they are different sounds in different folders. Before
+      // the enum carried a folder they would have collided.
       expect(paths, hasLength(SoundEffect.values.length));
-      for (final String path in paths) {
-        expect(path, startsWith('sounds/'));
-        expect(path, endsWith('.wav'));
+
+      for (final SoundEffect effect in SoundEffect.values) {
+        expect(folders, contains(effect.folder), reason: effect.name);
+        expect(effect.asset, startsWith('${effect.folder}/'));
+        expect(effect.asset, endsWith('.wav'));
+      }
+    });
+
+    test('keeps the shared set separate from the games', () {
+      // A screen outside a game can only play the shared set, so anything
+      // that drifted into it would be unplayable from the lobby — and a game
+      // sound that lost its folder would be looked for in `assets/sounds`,
+      // where it does not exist.
+      final Iterable<SoundEffect> shared =
+          SoundEffect.values.where((SoundEffect e) => e.isShared);
+
+      expect(shared, isNotEmpty);
+      for (final SoundEffect effect in shared) {
+        expect(effect.folder, 'sounds');
       }
     });
   });

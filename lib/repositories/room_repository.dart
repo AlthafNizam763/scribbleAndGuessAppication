@@ -112,6 +112,22 @@ abstract interface class RoomRepository {
   /// [AppErrorCode.invalidAction] when a match is already in progress.
   Future<Result<void>> updateSettings(RoomSettings settings);
 
+  /// Seats up to [count] Stupids — the platform's bot cast. Host only.
+  ///
+  /// Returns how many were actually seated, which may be fewer than asked for
+  /// when the room is nearly full. Fewer is a success, not a failure: somebody
+  /// who asks for four in a room with two free seats wants those two filled.
+  ///
+  /// Fails with [AppErrorCode.notHost], or [AppErrorCode.invalidAction] when
+  /// the match has already started or the room is full.
+  Future<Result<int>> addStupids(int count);
+
+  /// Removes every Stupid from the room, returning how many went. Host only.
+  ///
+  /// The counterpart to [addStupids], so filling a room with bots is not a
+  /// one-way door when real players turn up.
+  Future<Result<int>> clearStupids();
+
   /// Removes [playerId] from the room. Host only.
   ///
   /// The target may rejoin afterwards; use [banPlayer] to keep them out.

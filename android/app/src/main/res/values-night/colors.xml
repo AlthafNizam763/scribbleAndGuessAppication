@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- AppColors.darkPaper: the night desk. The launcher icon keeps its own
-         paper in both modes, so only the splash window swaps. -->
-    <color name="launch_background">#1E1B18</color>
+    <!-- AppColors.darkBg: the near-black violet-tinted page. The launcher icon
+         keeps its own plate in both modes, so only the splash window swaps. -->
+    <color name="launch_background">#0A0912</color>
 </resources>

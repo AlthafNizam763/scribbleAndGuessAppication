@@ -10,7 +10,7 @@ class AppSettings extends Equatable {
     this.soundEnabled = true,
     this.hapticsEnabled = true,
     this.reducedMotion = false,
-    this.themeMode = SketchThemeMode.system,
+    this.themeMode = AppThemeMode.system,
     this.language = AppLanguage.en,
     this.serverUrl = AppConstants.defaultServerUrl,
   });
@@ -20,7 +20,7 @@ class AppSettings extends Equatable {
         soundEnabled: asBool(json['soundEnabled'], defaults.soundEnabled),
         hapticsEnabled: asBool(json['hapticsEnabled'], defaults.hapticsEnabled),
         reducedMotion: asBool(json['reducedMotion'], defaults.reducedMotion),
-        themeMode: SketchThemeMode.fromName(asString(json['themeMode'])),
+        themeMode: AppThemeMode.fromName(asString(json['themeMode'])),
         language: AppLanguage.fromName(asString(json['language'])),
         serverUrl: asString(json['serverUrl'], defaults.serverUrl),
       );
@@ -38,7 +38,7 @@ class AppSettings extends Equatable {
   final bool reducedMotion;
 
   /// Which palette the app renders with.
-  final SketchThemeMode themeMode;
+  final AppThemeMode themeMode;
 
   /// The language the interface is presented in.
   ///
@@ -71,7 +71,7 @@ class AppSettings extends Equatable {
     bool? soundEnabled,
     bool? hapticsEnabled,
     bool? reducedMotion,
-    SketchThemeMode? themeMode,
+    AppThemeMode? themeMode,
     AppLanguage? language,
     String? serverUrl,
   }) =>

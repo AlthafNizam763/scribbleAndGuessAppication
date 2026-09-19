@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/core/utils/responsive.dart';
-import 'package:scribble_guess/core/widgets/sketch_dialogs.dart';
+import 'package:scribble_guess/core/widgets/app_dialogs.dart';
 import 'package:scribble_guess/core/widgets/tap_feedback.dart';
 import 'package:scribble_guess/models/voice_peer.dart';
 import 'package:scribble_guess/providers/voice_chat_provider.dart';
@@ -48,9 +48,9 @@ class _DrawerStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
-    final Color tint = colors.inkSoft;
+    final Color tint = colors.textMuted;
 
     // The full sentence where there is room for it. On a phone the header
     // caption already reads "You are drawing" two centimetres to the left, so
@@ -168,10 +168,10 @@ class _MicButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     final (IconData icon, Color tint) = switch ((blocked, muted)) {
-      (true, _) => (Icons.mic_off_outlined, colors.inkFaint),
+      (true, _) => (Icons.mic_off_outlined, colors.textFaint),
       (_, true) => (Icons.mic_off, colors.danger),
       _ => (Icons.mic, colors.accentGreen),
     };
@@ -221,7 +221,7 @@ class _SpeakingDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Semantics(
       label: context.l10n.voiceSomeoneSpeaking,

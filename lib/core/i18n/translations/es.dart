@@ -7,7 +7,7 @@
 /// Spanish's CLDR plural categories are `one` and `other`; `{n}` is replaced
 /// with the count.
 const Map<String, String> esStrings = <String, String>{
-  'appTagline': 'Dibuja. Adivina. Gana.',
+  'appTagline': 'Toma decisiones estúpidas. Juntos.',
 
   // --- Common actions ------------------------------------------------------
   'ok': 'Aceptar',
@@ -421,12 +421,12 @@ const Map<String, String> esStrings = <String, String>{
   'locationDetecting': 'Buscando tu ciudad…',
   'locationNoticeTitle': '¿Usar tu ubicación?',
   'locationNoticeBody':
-      'Scribble & Guess puede rellenar tu ciudad por ti.\n\n• Tu dispositivo calcula aproximadamente dónde estás y lo convertimos en un nombre de ciudad en tu propio teléfono.\n• Solo se guardan la ciudad, la región y el país; nunca tu posición exacta, ni tu dirección, ni ningún historial de dónde has estado.\n• Ocurre una sola vez, cuando pulsas el botón. No hay nada funcionando en segundo plano.\n• Se usa únicamente para la clasificación local. Los demás jugadores ven la ciudad y nada más preciso.\n\nPuedes decir que no y escribir tu ciudad, o saltarte esto por completo.',
+      'STUPID GAMES puede rellenar tu ciudad por ti.\n\n• Tu dispositivo calcula aproximadamente dónde estás y lo convertimos en un nombre de ciudad en tu propio teléfono.\n• Solo se guardan la ciudad, la región y el país; nunca tu posición exacta, ni tu dirección, ni ningún historial de dónde has estado.\n• Ocurre una sola vez, cuando pulsas el botón. No hay nada funcionando en segundo plano.\n• Se usa únicamente para la clasificación local. Los demás jugadores ven la ciudad y nada más preciso.\n\nPuedes decir que no y escribir tu ciudad, o saltarte esto por completo.',
   'locationNoticeAllow': 'Continuar',
   'locationNoticeNotNow': 'Ahora no',
   'locationSaved': 'Guardado.',
   'locationDeniedHint': 'No pasa nada: escribe tu ciudad aquí abajo.',
-  'locationBlockedTitle': 'La ubicación está desactivada para Scribble & Guess',
+  'locationBlockedTitle': 'La ubicación está desactivada para STUPID GAMES',
   'locationBlockedBody':
       'Tu teléfono no volverá a preguntar hasta que lo cambies en los ajustes del sistema. También puedes escribir tu ciudad sin más.',
   'locationOpenSettings': 'Abrir ajustes',
@@ -591,7 +591,7 @@ const Map<String, String> esStrings = <String, String>{
   'progressionLevelUp': 'Nivel {level} — {title}',
   'friendRemoveBody':
       'Tú y {name} dejaréis de ser amigos. Cualquiera de los dos puede enviar una solicitud nueva más adelante.',
-  'inviteMessage': '¡Únete a mi sala de Scribble & Guess! Código: {code}',
+  'inviteMessage': '¡Únete a mi sala de STUPID GAMES! Código: {code}',
   'versionLabel': 'Versión {version}',
   'reconnectingIn': 'Reconectando en {seconds} s',
 };

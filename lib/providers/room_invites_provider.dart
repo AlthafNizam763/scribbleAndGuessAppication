@@ -1,13 +1,17 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scribble_guess/core/constants/socket_events.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/utils/app_logger.dart';
 import 'package:scribble_guess/core/utils/result.dart';
 import 'package:scribble_guess/data/api/rooms_api.dart';
+import 'package:scribble_guess/models/discovered_room.dart';
 import 'package:scribble_guess/models/enums.dart';
+import 'package:scribble_guess/models/game_definition.dart';
 import 'package:scribble_guess/models/json_utils.dart';
+import 'package:scribble_guess/models/platform_room.dart';
 import 'package:scribble_guess/models/player_profile.dart';
 import 'package:scribble_guess/models/room.dart';
 import 'package:scribble_guess/models/room_invite.dart';
@@ -211,6 +215,59 @@ final AutoDisposeAsyncNotifierProvider<PublicRoomsNotifier, PublicRoomPage>
     AsyncNotifierProvider.autoDispose<PublicRoomsNotifier, PublicRoomPage>(
   PublicRoomsNotifier.new,
 );
+
+// ---------------------------------------------------------------------------
+// Quick Match
+// ---------------------------------------------------------------------------
+
+/// Every joinable public room, across every game.
+///
+/// Autodisposes for the same reason [PublicRoomsNotifier] does, and more so:
+/// this list spans five games, so it goes stale faster than any one game's
+/// browser would.
+class RoomDiscoveryNotifier extends AutoDisposeAsyncNotifier<RoomDiscoveryPage> {
+  @override
+  Future<RoomDiscoveryPage> build() async {
+    final Result<RoomDiscoveryPage> result =
+        await ref.read(roomsApiProvider).discoverRooms();
+
+    return switch (result) {
+      Ok<RoomDiscoveryPage>(:final RoomDiscoveryPage value) => value,
+      Err<RoomDiscoveryPage>(:final Failure failure) => throw failure,
+    };
+  }
+
+  /// Re-reads the list, keeping the current rows on screen while it runs.
+  Future<void> refresh() async {
+    state = await AsyncValue.guard<RoomDiscoveryPage>(build);
+  }
+}
+
+/// Quick Match, as the home screen reads it.
+final AutoDisposeAsyncNotifierProvider<RoomDiscoveryNotifier, RoomDiscoveryPage>
+    roomDiscoveryProvider =
+    AsyncNotifierProvider.autoDispose<RoomDiscoveryNotifier, RoomDiscoveryPage>(
+  RoomDiscoveryNotifier.new,
+);
+
+/// Where a successful Quick Match join left the player.
+///
+/// The two room engines land somewhere different — the Scribble engine seats a
+/// socket and the lobby screen renders from its push, while the platform
+/// engine returns a room document and its own lobby renders from that — so the
+/// caller has to be told which, rather than guessing from the game id.
+@immutable
+class JoinedRoomDestination {
+  /// Creates a destination.
+  const JoinedRoomDestination({required this.route, this.game});
+
+  /// Which engine took the seat.
+  final RoomJoinRoute route;
+
+  /// The game, when this build knows it. Only meaningful for
+  /// [RoomJoinRoute.gamePlatform], whose lobby is per-game.
+  final GameDefinition? game;
+}
 
 // ---------------------------------------------------------------------------
 // The invite sheet
@@ -431,6 +488,53 @@ class RoomInviteActions {
     if (profile == null) return const Err<Room>(_noProfile);
 
     return _ref.read(roomControllerProvider).joinRoom(room.code);
+  }
+
+  /// Takes a seat in a room found through Quick Match, whatever game it is.
+  ///
+  /// ## Why this is not just [joinPublic]
+  ///
+  /// [joinPublic] speaks to one engine. Quick Match spans both, so the route
+  /// has to be chosen per row — and it is chosen from what the *server* said in
+  /// [DiscoveredRoom.joinVia], never from the game id. The moment a client
+  /// starts inferring "Ludo means the platform engine" it is holding a copy of
+  /// a server decision, and it will be the thing that breaks when a game moves.
+  ///
+  /// Neither branch re-checks joinability. Capacity, bans, whether the match
+  /// already started and whether the player is seated somewhere else are all
+  /// the server's to decide, and both engines re-check them at the moment of
+  /// the join — which is the only moment the answer is true. A row that looked
+  /// open when the list was drawn can be full by the time somebody taps it, and
+  /// that refusal is the correct outcome, not a bug to route around.
+  Future<Result<JoinedRoomDestination>> joinDiscovered(DiscoveredRoom room) async {
+    final PlayerProfile? profile = _ref.read(profileProvider);
+    if (profile == null) return const Err<JoinedRoomDestination>(_noProfile);
+
+    switch (room.joinVia) {
+      case RoomJoinRoute.room:
+        // The Scribble engine: REST seats the account, and the room controller
+        // enters the room over the socket — which is the step that actually
+        // puts *this connection* in the lobby. Skipping it would leave the
+        // player looking at a lobby that never updates.
+        final Result<Room> joined =
+            await _ref.read(roomControllerProvider).joinRoom(room.code);
+
+        return joined.map(
+          (_) => const JoinedRoomDestination(route: RoomJoinRoute.room),
+        );
+
+      case RoomJoinRoute.gamePlatform:
+        final Result<PlatformRoom> joined = await _ref
+            .read(gamesApiProvider)
+            .joinRoom(gameWireId: room.gameId?.wire ?? '', roomId: room.roomId);
+
+        return joined.map(
+          (_) => JoinedRoomDestination(
+            route: RoomJoinRoute.gamePlatform,
+            game: room.game,
+          ),
+        );
+    }
   }
 
   /// Re-reads the invite sheet for [roomId], marking [friendId] invited first.

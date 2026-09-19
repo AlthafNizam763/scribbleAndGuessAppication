@@ -34,7 +34,7 @@ class PlayerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Container(
@@ -44,11 +44,11 @@ class PlayerRow extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: isSelf ? colors.paperShade : colors.paperDim,
+        color: isSelf ? colors.primaryWash : colors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
-          color: isSelf ? colors.ink : colors.inkFaint,
-          width: AppSpacing.border,
+          color: isSelf ? colors.washBorder(colors.primary) : colors.border,
+          width: isSelf ? AppSpacing.border : AppSpacing.hairline,
         ),
       ),
       child: InkWell(
@@ -61,7 +61,7 @@ class PlayerRow extends StatelessWidget {
                 width: 26,
                 child: Text(
                   '$rank',
-                  style: text.titleMedium?.copyWith(color: colors.inkSoft),
+                  style: AppTypography.numeric(colors.textFaint, size: 15),
                 ),
               ),
               const SizedBox(width: AppSpacing.xs),
@@ -76,7 +76,7 @@ class PlayerRow extends StatelessWidget {
                   Text(
                     player.name.isEmpty ? '...' : player.name,
                     overflow: TextOverflow.ellipsis,
-                    style: text.titleSmall?.copyWith(color: colors.ink),
+                    style: text.titleSmall?.copyWith(color: colors.text),
                   ),
                   if (_badges(context, colors).isNotEmpty)
                     Padding(
@@ -92,9 +92,19 @@ class PlayerRow extends StatelessWidget {
             ),
             if (showScore) ...<Widget>[
               const SizedBox(width: AppSpacing.sm),
-              Text(
-                '${player.score}',
-                style: text.titleMedium?.copyWith(color: colors.ink),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm + 2,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.wash(colors.tertiary),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
+                ),
+                child: Text(
+                  '${player.score}',
+                  style: AppTypography.numeric(colors.tertiary, size: 15),
+                ),
               ),
             ],
             ?trailing,
@@ -104,13 +114,13 @@ class PlayerRow extends StatelessWidget {
     );
   }
 
-  List<Widget> _badges(BuildContext context, SketchColors colors) => <Widget>[
+  List<Widget> _badges(BuildContext context, AppPalette colors) => <Widget>[
         // First, and deliberately so. A player looking at a seat needs to know
         // whether they are up against a person before they need to know
         // anything else about it, and a badge that can be pushed off the end
         // of a wrap by four others is a badge that sometimes is not there.
         if (player.isBot)
-          SketchBadge(
+          HudBadge(
             label: player.botDifficulty == null
                 ? context.l10n.tournamentAiPlayer
                 : '${context.l10n.tournamentAiPlayer} · ${player.botDifficulty}',
@@ -118,37 +128,37 @@ class PlayerRow extends StatelessWidget {
             color: colors.accentPurple,
           ),
         if (player.isDrawing)
-          SketchBadge(
+          HudBadge(
             label: context.l10n.gameYouDraw.toUpperCase(),
             icon: Icons.brush,
             color: colors.accentBlue,
           ),
         if (player.isHost)
-          SketchBadge(
+          HudBadge(
             label: context.l10n.lobbyHostBadge,
             icon: Icons.star,
             color: colors.accentYellow,
           ),
         if (player.isReady && !player.isDrawing)
-          SketchBadge(
+          HudBadge(
             label: context.l10n.lobbyReadyBadge,
             icon: Icons.check,
             color: colors.success,
           ),
         if (player.hasGuessed)
-          SketchBadge(
+          HudBadge(
             label: context.l10n.gameYouGuessedIt,
             icon: Icons.lightbulb,
             color: colors.success,
           ),
         if (player.isMuted)
-          SketchBadge(
+          HudBadge(
             label: context.l10n.chatMuted,
             icon: Icons.volume_off,
             color: colors.warning,
           ),
         if (player.connection != PlayerConnection.connected)
-          SketchBadge(
+          HudBadge(
             label: player.connection.label,
             icon: Icons.wifi_off,
             color: colors.danger,

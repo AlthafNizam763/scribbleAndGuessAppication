@@ -2,8 +2,8 @@
 ///
 /// Anything tunable per room lives in `GameDefaults` instead.
 abstract final class AppConstants {
-  /// Human readable product name.
-  static const String appName = 'Scribble & Guess';
+  /// Human readable product name. The platform, not any one game.
+  static const String appName = 'STUPID GAMES';
 
   /// Marketing version of the client, mirrored in `pubspec.yaml`.
   static const String appVersion = '1.0.0';
@@ -37,10 +37,13 @@ abstract final class AppConstants {
 
   /// Number of procedural avatar characters, indexed `0..avatarCount - 1`.
   ///
-  /// Split evenly across the three families in `AvatarKind`: people, animals
-  /// and anime. Entries may be appended, never reordered, because an id is
+  /// The ten cats. Entries may be appended, never reordered, because an id is
   /// persisted with the profile and broadcast to every other player.
-  static const int avatarCount = 18;
+  ///
+  /// Accounts made before the rebrand hold ids up to 17. Nothing migrated
+  /// them: `AvatarCatalog.faceAt` folds any id into range, so an old 14 draws
+  /// cat 4 — see the note on that catalogue.
+  static const int avatarCount = 10;
 
   /// Number of avatar colours, indexed `0..avatarColorCount - 1`.
   static const int avatarColorCount = 8;

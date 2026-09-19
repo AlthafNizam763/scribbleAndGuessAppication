@@ -27,8 +27,8 @@ class NotificationLook {
   /// The doodle-style glyph on the left of the row.
   final IconData icon;
 
-  /// Which accent tints it, read off the active [SketchColors].
-  final Color Function(SketchColors colors) tint;
+  /// Which accent tints it, read off the active [AppPalette].
+  final Color Function(AppPalette colors) tint;
 
   /// The route name to open on tap, or null when there is nowhere to go.
   final String? route;
@@ -45,21 +45,21 @@ NotificationLook lookFor(NotificationKind kind) {
     case NotificationKind.friendRequest:
       return NotificationLook(
         icon: Icons.person_add_alt_1_outlined,
-        tint: (SketchColors colors) => colors.accentBlue,
+        tint: (AppPalette colors) => colors.accentBlue,
         route: AppRoutes.friendRequests,
       );
 
     case NotificationKind.friendRequestAccepted:
       return NotificationLook(
         icon: Icons.people_alt_outlined,
-        tint: (SketchColors colors) => colors.accentGreen,
+        tint: (AppPalette colors) => colors.accentGreen,
         route: AppRoutes.friends,
       );
 
     case NotificationKind.roomInvitation:
       return NotificationLook(
         icon: Icons.mail_outline,
-        tint: (SketchColors colors) => colors.accentPurple,
+        tint: (AppPalette colors) => colors.accentPurple,
         route: AppRoutes.roomInvitations,
       );
 
@@ -67,38 +67,38 @@ NotificationLook lookFor(NotificationKind kind) {
     case NotificationKind.friendJoinedRoom:
       return NotificationLook(
         icon: Icons.sports_esports_outlined,
-        tint: (SketchColors colors) => colors.accentOrange,
+        tint: (AppPalette colors) => colors.accentOrange,
         route: AppRoutes.publicRooms,
       );
 
     case NotificationKind.userJoinedRoom:
       return NotificationLook(
         icon: Icons.login_outlined,
-        tint: (SketchColors colors) => colors.accentTeal,
+        tint: (AppPalette colors) => colors.accentTeal,
       );
 
     case NotificationKind.gameResult:
       return NotificationLook(
         icon: Icons.emoji_events_outlined,
-        tint: (SketchColors colors) => colors.accentYellow,
+        tint: (AppPalette colors) => colors.accentYellow,
       );
 
     case NotificationKind.achievementUnlocked:
       return NotificationLook(
         icon: Icons.workspace_premium_outlined,
-        tint: (SketchColors colors) => colors.accentYellow,
+        tint: (AppPalette colors) => colors.accentYellow,
       );
 
     case NotificationKind.dailyChallengeCompleted:
       return NotificationLook(
         icon: Icons.task_alt_outlined,
-        tint: (SketchColors colors) => colors.accentGreen,
+        tint: (AppPalette colors) => colors.accentGreen,
       );
 
     case NotificationKind.tournamentAnnouncement:
       return NotificationLook(
         icon: Icons.flag_outlined,
-        tint: (SketchColors colors) => colors.accentRed,
+        tint: (AppPalette colors) => colors.accentRed,
         route: AppRoutes.tournaments,
       );
 
@@ -109,20 +109,20 @@ NotificationLook lookFor(NotificationKind kind) {
       // see `app/push_navigation.dart`.
       return NotificationLook(
         icon: Icons.how_to_reg_outlined,
-        tint: (SketchColors colors) => colors.accentGreen,
+        tint: (AppPalette colors) => colors.accentGreen,
         route: AppRoutes.tournaments,
       );
 
     case NotificationKind.systemAnnouncement:
       return NotificationLook(
         icon: Icons.campaign_outlined,
-        tint: (SketchColors colors) => colors.accentPink,
+        tint: (AppPalette colors) => colors.accentPink,
       );
 
     case NotificationKind.unknown:
       return NotificationLook(
         icon: Icons.notifications_none_outlined,
-        tint: (SketchColors colors) => colors.inkSoft,
+        tint: (AppPalette colors) => colors.textMuted,
       );
   }
 }

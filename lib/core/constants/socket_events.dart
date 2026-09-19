@@ -43,6 +43,17 @@ abstract final class SocketEvents {
   /// Replaces the room settings. Host only.
   static const String clientRoomSettings = 'c:room:settings';
 
+  /// Seats bot players — Stupids — in the room. Host only, lobby only.
+  ///
+  /// Payload is `{'count': n}` and nothing else: which Stupids are seated, and
+  /// at what difficulty, is the server's decision. The new seats arrive in the
+  /// ordinary `s:room:state` push that follows, exactly as a person joining
+  /// would, so nothing on the client has to merge a second roster.
+  static const String clientRoomAddStupids = 'c:room:addStupids';
+
+  /// Removes every Stupid from the room. Host only, lobby only.
+  static const String clientRoomClearStupids = 'c:room:clearStupids';
+
   /// Removes a player from the room. Host only.
   static const String clientRoomKick = 'c:room:kick';
 
@@ -517,6 +528,246 @@ abstract final class SocketEvents {
     serverTournamentBotStatusUpdated,
   ];
 
+// ---------------------------------------------------------------------------
+  // Platform games — Kazhutha, Bluff Bar, Space Mystery, Ludo
+  // ---------------------------------------------------------------------------
+
+  /// The `game:*` namespace, mirrored in the backend's
+  /// `src/socket/game_platform.socket.ts` and documented in section 8a of
+  /// `docs/CONTRACT.md`.
+  ///
+  /// ## Why this is a second namespace and not more `c:`/`s:` events
+  ///
+  /// Scribble & Guess runs on the `Room`/`Game` services and its own in-process
+  /// room registry. The other four games run on the platform `GameRoom` /
+  /// `GameMatch` layer, which has its own lifecycle, its own bot driver and its
+  /// own per-viewer projection. They are genuinely two systems, and the wire
+  /// says so: `SCRIBBLE_GUESS` is refused by every event below, on purpose.
+  ///
+  /// ## The one rule that matters
+  ///
+  /// Every payload carrying game state is **that viewer's projection**, not the
+  /// match. Two players in one match receive different objects from the same
+  /// broadcast. Nothing the client is not entitled to — another hand, a role, a
+  /// position behind a wall — is ever in the payload, so there is nothing for a
+  /// modified client to reveal. Never reconstruct "the real state" by merging
+  /// what several payloads implied.
+
+  /// Creates a platform room. Acks `{room}`.
+  static const String clientGameRoomCreate = 'game:room_created';
+
+  /// Takes a seat in a platform room, by id or by code. Acks `{room}`.
+  static const String clientGameRoomJoin = 'game:player_joined';
+
+  /// Leaves the current platform room. Acks `{room}`.
+  static const String clientGameRoomLeave = 'game:player_left';
+
+  /// Sets the ready flag. Acks `{room, started}`.
+  static const String clientGameRoomReady = 'game:player_ready';
+
+  /// Attaches this socket to a room the player is **already** seated in.
+  ///
+  /// The bridge between the REST lobby and the realtime game, and the reason
+  /// it exists is worth keeping: rooms are created and joined over REST, and a
+  /// REST call has no socket attached to it, so nothing in it can put this
+  /// connection into the room's broadcast channel. Without this call the lobby
+  /// works and the match never arrives.
+  ///
+  /// It is also the reconnect seam — it acks `{room, match}` with the caller's
+  /// own view, so a client that dropped is handed the present rather than
+  /// waiting for the next thing to happen.
+  static const String clientGameSubscribe = 'game:subscribe';
+
+  /// A generic game action: `{gameId, matchId, type, ...}`. Acks `{state}`.
+  ///
+  /// Every game also has aliases below. They are the same code path — the
+  /// alias only supplies `type` — so prefer the named one at a call site,
+  /// because `bluff:challenge` says what is happening and `game:action` does
+  /// not.
+  static const String clientGameAction = 'game:action';
+
+  /// Sends a message to the platform room. Acks `{message}`.
+  static const String clientGameChatSend = 'game:chat_message';
+
+  /// Offers another round at the same table. Acks `{rematch}`.
+  ///
+  /// An offer rather than a command: everybody answers, the ones who said yes
+  /// play, and the ones who said no leave the room before the next deal.
+  /// Tapping it twice is an acceptance of whoever asked first, not a second
+  /// offer — the server treats a duplicate as agreement.
+  static const String clientGameRematchRequest = 'game:rematch_request';
+
+  /// Answers a standing offer: `{accept}`. Acks `{rematch}`.
+  ///
+  /// Declining also leaves the room. That is deliberate — a player who said no
+  /// and stayed seated would be carried into the next deal by everybody else's
+  /// acceptances.
+  static const String clientGameRematchRespond = 'game:rematch_respond';
+
+  // -- Kazhutha --------------------------------------------------------------
+
+  /// Draws one card from another player's fan.
+  ///
+  /// `{targetPlayerId, cardIndex?}`. The index is a position, not a card: the
+  /// server reshuffles that hand immediately before the pick, so choosing
+  /// where to reach is tactile and carries no information. Omitting it draws
+  /// at random.
+  static const String clientKazhuthaDraw = 'kazhutha:draw_card';
+
+  // -- Bluff Bar -------------------------------------------------------------
+
+  /// Puts one to three cards face down, claiming they are all the table rank.
+  /// `{cardIds, reaction?}`.
+  static const String clientBluffDeclare = 'bluff:declare';
+
+  /// Calls the previous claim a lie. Legal only on your turn, never your own.
+  static const String clientBluffChallenge = 'bluff:challenge';
+
+  /// Table talk. Flavour only; it can never affect a rule.
+  static const String clientBluffReact = 'bluff:react';
+
+  // -- Space Mystery ---------------------------------------------------------
+
+  /// A movement **direction**, never a position: `{dx, dy}`.
+  ///
+  /// Clamped to a unit vector on arrival and integrated against the floor plan
+  /// server-side, so a thousand of these in a second move a player exactly as
+  /// far as twenty do. Sent continuously while a stick is held, which is why
+  /// it has its own rate-limit bucket on the server.
+  static const String clientSpaceMove = 'space:move';
+
+  /// Starts work at a console: `{stationId}`. The server times it and decides
+  /// when — and whether — it completed.
+  static const String clientSpaceTask = 'space:task';
+
+  /// Traitor only: `{targetId}`. Refused unless the server agrees they are
+  /// standing on them and off cooldown.
+  static const String clientSpaceEliminate = 'space:eliminate';
+
+  /// Reports a body you are standing next to. Opens a meeting.
+  static const String clientSpaceReport = 'space:report';
+
+  /// Calls an emergency meeting from the table. One per player per match.
+  static const String clientSpaceMeeting = 'space:meeting';
+
+  /// Votes in a meeting: `{targetId}`. An empty id is a deliberate skip.
+  static const String clientSpaceVote = 'space:vote';
+
+  /// Traitor only: `{kind}` — `breach`, `lights` or `comms`.
+  static const String clientSpaceSabotage = 'space:sabotage';
+
+  /// Traitor only. `{ventId}` moves to another mouth on the same network;
+  /// omitting it climbs out where you are.
+  static const String clientSpaceVent = 'space:vent';
+
+  // -- Ludo --------------------------------------------------------------
+
+  /// Asks the server for a dice roll.
+  ///
+  /// The number comes back in the broadcast, not from here. There is no local
+  /// random in this game — a client that rolled its own dice would be a client
+  /// that rolled sixes all afternoon.
+  ///
+  /// Refused when a roll is already on the table: one must be spent on a move
+  /// before another is asked for.
+  static const String clientLudoRoll = 'ludo:dice_rolled';
+
+  /// Moves one counter with the roll on the table: `{tokenIndex}`.
+  ///
+  /// Whether that counter can legally move is the server's decision. The board
+  /// lights the ones it believes are movable so a player is not offered four
+  /// taps and refused three, but the server checks again and its answer wins.
+  static const String clientLudoMove = 'ludo:token_moved';
+
+  // -- Platform voice --------------------------------------------------------
+
+  /// Joins the platform room's voice mesh. Acks `{iceServers, peers}`.
+  static const String clientGameVoiceJoin = 'game:voice_joined';
+
+  /// Leaves the voice mesh.
+  static const String clientGameVoiceLeave = 'game:voice_left';
+
+  /// WebRTC signalling, relayed to one peer in the room. Audio never travels
+  /// over the socket — only the SDP and ICE that set up the peer connection.
+  static const String clientGameVoiceOffer = 'game:voice_offer';
+  static const String clientGameVoiceAnswer = 'game:voice_answer';
+  static const String clientGameVoiceIce = 'game:voice_ice_candidate';
+
+  /// Announces the local microphone state to the room.
+  static const String clientGameVoiceMute = 'game:player_muted';
+
+  // -- Server -> client ------------------------------------------------------
+
+  /// The room roster changed: `{room, event}`. Carries the reason in `event`,
+  /// which is the name of whichever call caused it.
+  static const String serverGameRoomUpdated = 'game:room_updated';
+
+  /// Echo of a room this socket created: `{room}`.
+  static const String serverGameRoomCreated = 'game:room_created';
+
+  /// A match has begun. Carries this viewer's first projection.
+  static const String serverGameMatchStarted = 'game:match_started';
+
+  /// A new projection for this viewer, after anybody's action.
+  static const String serverGameMatchState = 'game:match_state';
+
+  /// The match is over. `result` is populated and roles, if any, are revealed.
+  static const String serverGameMatchCompleted = 'game:match_completed';
+
+  /// A chat line in the platform room: `{message}`.
+  static const String serverGameChatMessage = 'game:chat_message';
+
+  /// Space Mystery's realtime frame, ten times a second, one per viewer.
+  ///
+  /// Distinct from [serverGameMatchState] because it does not come from an
+  /// action — it comes from the tick — and because it arrives far too often to
+  /// route through the same path a turn-based update does.
+  static const String serverSpaceState = 'space:state';
+
+  /// Platform voice signalling, relayed from another player. Each carries
+  /// `fromUserId`.
+  static const String serverGameVoiceJoined = 'game:voice_joined';
+  static const String serverGameVoiceLeft = 'game:voice_left';
+  static const String serverGameVoiceOffer = 'game:voice_offer';
+  static const String serverGameVoiceAnswer = 'game:voice_answer';
+  static const String serverGameVoiceIce = 'game:voice_ice_candidate';
+  static const String serverGameVoiceMuted = 'game:player_muted';
+
+  /// The server withdrawing voice from this player.
+  ///
+  /// Pushed rather than acked, because the reason is never something the
+  /// player did: a meeting ended, they were ejected, the match finished. It
+  /// carries the same shape as the join ack with `enabled: false`, so one
+  /// handler covers both.
+  static const String serverGameVoiceState = 'game:voice_state';
+
+  /// A refused signalling frame. The out-of-band twin of `s:voice:error`.
+  static const String serverGameVoiceError = 'game:voice_error';
+
+  /// Every platform-game push, for attaching and detaching in one pass.
+  static const List<String> platformGameEvents = <String>[
+    serverGameRoomUpdated,
+    serverGameRoomCreated,
+    serverGameMatchStarted,
+    serverGameMatchState,
+    serverGameMatchCompleted,
+    serverGameChatMessage,
+    serverSpaceState,
+  ];
+
+  /// Platform voice pushes, kept apart because the voice service subscribes to
+  /// these and nothing else.
+  static const List<String> platformVoiceEvents = <String>[
+    serverGameVoiceJoined,
+    serverGameVoiceLeft,
+    serverGameVoiceOffer,
+    serverGameVoiceAnswer,
+    serverGameVoiceIce,
+    serverGameVoiceMuted,
+    serverGameVoiceState,
+    serverGameVoiceError,
+  ];
+
   /// Every server-originated event, in protocol order.
   ///
   /// Useful for attaching and detaching listeners in one pass.
@@ -555,6 +806,8 @@ abstract final class SocketEvents {
     ...progressionEvents,
     ...chatExtraEvents,
     ...tournamentEvents,
+    ...platformGameEvents,
+    ...platformVoiceEvents,
     serverRoomError,
   ];
 }

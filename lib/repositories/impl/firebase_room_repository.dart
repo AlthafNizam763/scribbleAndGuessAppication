@@ -117,6 +117,19 @@ class FirebaseRoomRepository implements RoomRepository {
       _withRoom((String id) => _service.updateSettings(id, settings));
 
   @override
+  Future<Result<int>> addStupids(int count) async => const Err<int>(
+    // The bot engine lives in the socket server, not in Firestore. This
+    // implementation is legacy and unwired; saying so beats seating bots
+    // nothing would ever play.
+    Failure(AppErrorCode.invalidAction, 'Stupids need the live game server.'),
+  );
+
+  @override
+  Future<Result<int>> clearStupids() async => const Err<int>(
+    Failure(AppErrorCode.invalidAction, 'Stupids need the live game server.'),
+  );
+
+  @override
   Future<Result<void>> kickPlayer(String playerId) =>
       _withRoom((String id) => _service.kickPlayer(id, playerId));
 

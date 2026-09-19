@@ -12,7 +12,7 @@
 /// is what Japanese actually needs: 人 for people, 回 for rounds, 点 for
 /// points.
 const Map<String, String> jaStrings = <String, String>{
-  'appTagline': '描いて、当てて、勝つ。',
+  'appTagline': 'バカな選択を、みんなで。',
 
   // --- Common actions ------------------------------------------------------
   'ok': 'OK',
@@ -240,7 +240,7 @@ const Map<String, String> jaStrings = <String, String>{
   // --- How to play ---------------------------------------------------------
   'howToPlayTitle': '遊び方',
   'howToPlayIntro':
-      'Scribble & Guess は2人から12人で遊ぶパーティーゲームです。毎ターン1人が秘密のお題を描き、他の全員がそれを当てようと競います。',
+      'STUPID GAMES は2人から12人で遊ぶパーティーゲームです。毎ターン1人が秘密のお題を描き、他の全員がそれを当てようと競います。',
   'howToPlayTurnsTitle': '1. 順番に描く',
   'howToPlayTurnsBody':
       'プレイヤーは順番に描いていきます。全員が1回ずつ描くと1ラウンド終了で、ホストが決めたラウンド数だけ試合が続きます。',
@@ -422,12 +422,12 @@ const Map<String, String> jaStrings = <String, String>{
   'locationDetecting': '都市を調べています…',
   'locationNoticeTitle': '現在地を使いますか？',
   'locationNoticeBody':
-      'Scribble & Guess があなたの都市を自動で入力できます。\n\n• 端末がおおよその位置を割り出し、それをあなたのスマートフォン上で都市名に変換します。\n• 保存されるのは都市・地域・国だけです。正確な位置や住所、移動の履歴が保存されることは一切ありません。\n• ボタンを押したときの1回だけです。バックグラウンドでは何も動きません。\n• 地域ランキングにのみ使われます。他のプレイヤーに見えるのは都市までで、それより細かい情報は見えません。\n\n断って自分で都市を入力することも、まるごとスキップすることもできます。',
+      'STUPID GAMES があなたの都市を自動で入力できます。\n\n• 端末がおおよその位置を割り出し、それをあなたのスマートフォン上で都市名に変換します。\n• 保存されるのは都市・地域・国だけです。正確な位置や住所、移動の履歴が保存されることは一切ありません。\n• ボタンを押したときの1回だけです。バックグラウンドでは何も動きません。\n• 地域ランキングにのみ使われます。他のプレイヤーに見えるのは都市までで、それより細かい情報は見えません。\n\n断って自分で都市を入力することも、まるごとスキップすることもできます。',
   'locationNoticeAllow': '続ける',
   'locationNoticeNotNow': '今はしない',
   'locationSaved': '保存しました。',
   'locationDeniedHint': '大丈夫です。下に都市を入力してください。',
-  'locationBlockedTitle': 'Scribble & Guess の位置情報がオフです',
+  'locationBlockedTitle': 'STUPID GAMES の位置情報がオフです',
   'locationBlockedBody':
       'システム設定で変更するまで、端末は再度たずねません。都市を自分で入力することもできます。',
   'locationOpenSettings': '設定を開く',
@@ -580,7 +580,7 @@ const Map<String, String> jaStrings = <String, String>{
   'progressionLevelUp': 'レベル{level} — {title}',
   'friendRemoveBody':
       'あなたと{name}は友達ではなくなります。あとでどちらからでも新しくリクエストを送れます。',
-  'inviteMessage': '私の Scribble & Guess ルームに参加してください！ コード: {code}',
+  'inviteMessage': '私の STUPID GAMES ルームに参加してください！ コード: {code}',
   'versionLabel': 'バージョン {version}',
   'reconnectingIn': '{seconds}秒後に再接続します',
 };

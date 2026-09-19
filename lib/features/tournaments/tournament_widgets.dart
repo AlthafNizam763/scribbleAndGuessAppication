@@ -18,9 +18,9 @@ import 'package:scribble_guess/widgets/widgets.dart';
 ///
 /// ## The visual language
 ///
-/// The app's sketchbook style: off-white paper, hand-drawn dark borders, flat
-/// fills, one accent colour at a time. No glassmorphism, no neon, no elevation
-/// stacks — a tournament card is a card on the same paper as everything else.
+/// The app's one system: a surface step and a hairline, washed accents for
+/// status, and one accent colour at a time. No glassmorphism, no neon, no
+/// elevation stacks — a tournament card is the same card as everything else.
 
 /// The small status pill on a tournament card.
 class TournamentStatusChip extends StatelessWidget {
@@ -32,7 +32,7 @@ class TournamentStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     // One colour at a time, and only where the state changes what the player
     // should do next. Registration and check-in are calls to action; running
@@ -60,15 +60,15 @@ class TournamentStatusChip extends StatelessWidget {
           context.l10n.tournamentStatusRunning,
         ),
       AutoTournamentStatus.upcoming => (
-          colors.inkSoft,
+          colors.textMuted,
           context.l10n.tournamentStatusUpcoming,
         ),
       AutoTournamentStatus.completed => (
-          colors.inkSoft,
+          colors.textMuted,
           context.l10n.tournamentStatusCompleted,
         ),
       AutoTournamentStatus.cancelled => (
-          colors.inkFaint,
+          colors.textFaint,
           context.l10n.tournamentStatusCancelled,
         ),
     };
@@ -79,15 +79,16 @@ class TournamentStatusChip extends StatelessWidget {
         vertical: 3,
       ),
       decoration: BoxDecoration(
-        border: Border.all(color: ink, width: AppSpacing.border - 0.5),
-        borderRadius: BorderRadius.circular(999),
+        color: context.palette.wash(ink),
+        border: Border.all(
+          color: context.palette.washBorder(ink),
+          width: AppSpacing.hairline,
+        ),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: Text(
-        label,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: ink, fontWeight: FontWeight.w600),
+        label.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: ink),
       ),
     );
   }
@@ -156,7 +157,7 @@ class _TournamentCountdownState extends State<TournamentCountdown> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final Duration left = _remaining;
 
     String two(int value) => value.toString().padLeft(2, '0');
@@ -167,12 +168,12 @@ class _TournamentCountdownState extends State<TournamentCountdown> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(Icons.schedule, size: 15, color: colors.inkSoft),
+        Icon(Icons.schedule, size: 15, color: colors.textMuted),
         const SizedBox(width: AppSpacing.xs),
         Text(
           '${widget.label} $clock',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: left.inSeconds <= 30 ? colors.warning : colors.inkSoft,
+                color: left.inSeconds <= 30 ? colors.warning : colors.textMuted,
                 fontWeight:
                     left.inSeconds <= 30 ? FontWeight.w700 : FontWeight.w400,
               ),
@@ -197,7 +198,7 @@ class TournamentPlayerCounts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Wrap(
@@ -208,12 +209,12 @@ class TournamentPlayerCounts extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.person_outline, size: 15, color: colors.inkSoft),
+            Icon(Icons.person_outline, size: 15, color: colors.textMuted),
             const SizedBox(width: AppSpacing.xs),
             Text(
               '${tournament.humanPlayerCount} '
               '${context.l10n.tournamentHumanPlayers}',
-              style: text.bodySmall?.copyWith(color: colors.ink),
+              style: text.bodySmall?.copyWith(color: colors.text),
             ),
           ],
         ),
@@ -233,7 +234,7 @@ class TournamentPlayerCounts extends StatelessWidget {
         Text(
           '${tournament.totalPlayers} / ${tournament.minPlayers}'
           '–${tournament.maxPlayers}',
-          style: text.bodySmall?.copyWith(color: colors.inkFaint),
+          style: text.bodySmall?.copyWith(color: colors.textFaint),
         ),
       ],
     );
@@ -265,7 +266,7 @@ class TournamentPlayerLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final double size = dense ? 24 : 32;
@@ -285,8 +286,8 @@ class TournamentPlayerLine extends StatelessWidget {
               height: size,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colors.paperShade,
-                border: Border.all(color: colors.ink, width: AppSpacing.border - 0.5),
+                color: colors.surfaceActive,
+                border: Border.all(color: colors.border, width: AppSpacing.hairline),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
               ),
               child: Text('🤖', style: TextStyle(fontSize: size * 0.5)),
@@ -308,7 +309,7 @@ class TournamentPlayerLine extends StatelessWidget {
                   player.displayName,
                   overflow: TextOverflow.ellipsis,
                   style: (dense ? text.bodySmall : text.bodyMedium)?.copyWith(
-                    color: player.isEliminated ? colors.inkFaint : colors.ink,
+                    color: player.isEliminated ? colors.textFaint : colors.text,
                     // The reader's own row, marked the way every other list in
                     // the app marks it.
                     fontWeight:
@@ -360,7 +361,7 @@ class TrophyMark extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       size: Size.square(size),
-      painter: _TrophyPainter(color ?? context.sketch.inkSoft),
+      painter: _TrophyPainter(color ?? context.palette.textMuted),
     );
   }
 }

@@ -1,11 +1,11 @@
 {
-    "name": "Scribble & Guess",
-    "short_name": "Scribble",
+    "name": "STUPID GAMES",
+    "short_name": "Stupid Games",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#FBF7EF",
-    "theme_color": "#FBF7EF",
-    "description": "Draw it. Guess it. Win it. A real-time multiplayer drawing and guessing game.",
+    "background_color": "#F5F4FA",
+    "theme_color": "#F5F4FA",
+    "description": "A pile of ridiculous multiplayer mini-games where the worst possible decision is usually the funniest one.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

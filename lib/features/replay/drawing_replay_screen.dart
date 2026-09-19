@@ -186,14 +186,14 @@ class _DrawingReplayScreenState extends ConsumerState<DrawingReplayScreen> {
       replayProvider((gameId: widget.gameId, turnNumber: widget.turnNumber)),
     );
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.replayTitle,
       child: replay.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.replayUnavailable,
           icon: Icons.movie_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: () => ref.invalidate(
               replayProvider(
@@ -216,7 +216,7 @@ class _DrawingReplayScreenState extends ConsumerState<DrawingReplayScreen> {
         children: <Widget>[
           _Header(summary: replay.summary),
           Expanded(
-            child: SketchEmptyState(
+            child: AppEmptyState(
               message: context.l10n.replayNoDrawing,
               icon: Icons.brush_outlined,
             ),
@@ -275,7 +275,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Column(
@@ -283,25 +283,22 @@ class _Header extends StatelessWidget {
       children: <Widget>[
         Text(
           context.l10n.replayWord.toUpperCase(),
-          style: text.labelSmall?.copyWith(color: colors.inkSoft),
+          style: text.labelSmall?.copyWith(color: colors.textMuted),
         ),
         Text(
           summary.word,
-          style: text.headlineSmall?.copyWith(
-            color: colors.ink,
-            fontWeight: FontWeight.w800,
-          ),
+          style: text.headlineSmall?.copyWith(color: colors.text),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           '${context.l10n.replayDrawnBy} ${summary.drawerName}',
-          style: text.bodySmall?.copyWith(color: colors.inkSoft),
+          style: text.bodySmall?.copyWith(color: colors.textMuted),
         ),
         if (summary.compacted) ...<Widget>[
           const SizedBox(height: AppSpacing.xs),
           Text(
             context.l10n.replayCompacted,
-            style: text.labelSmall?.copyWith(color: colors.inkFaint),
+            style: text.labelSmall?.copyWith(color: colors.textFaint),
           ),
         ],
       ],
@@ -340,14 +337,14 @@ class _Controls extends StatelessWidget {
         Slider(value: fraction, onChanged: onSeek),
         Row(
           children: <Widget>[
-            SketchButton(
+            AppButton(
               label: playing ? context.l10n.replayPause : context.l10n.replayPlay,
               icon: playing ? Icons.pause : Icons.play_arrow,
-              variant: SketchButtonVariant.primary,
+              variant: AppButtonVariant.primary,
               onPressed: onPlayPause,
             ),
             const SizedBox(width: AppSpacing.sm),
-            SketchButton(
+            AppButton(
               label: context.l10n.replayRestart,
               icon: Icons.replay,
               onPressed: onRestart,
@@ -355,13 +352,13 @@ class _Controls extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             // One button cycling four speeds, rather than four buttons or a
             // slider nobody wants to aim at 1.37x.
-            SketchButton(
+            AppButton(
               label: speed.label,
               icon: Icons.speed,
               onPressed: onSpeed,
             ),
             const Spacer(),
-            SketchButton(
+            AppButton(
               label: context.l10n.replayShare,
               icon: Icons.ios_share,
               busy: sharing,

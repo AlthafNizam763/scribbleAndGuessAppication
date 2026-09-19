@@ -45,27 +45,23 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
     final int pending = ref.watch(pendingRequestCountProvider);
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.friendsTitle,
       padded: false,
       constrained: false,
       actions: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.person_search_outlined),
+        AppIconButton(
+          icon: Icons.person_search_rounded,
           tooltip: context.l10n.friendsSearchHint,
           onPressed: () => _openSearch(context),
         ),
       ],
       child: Column(
         children: <Widget>[
-          TabBar(
+          AppSegmentedTabs(
             controller: _tabs,
-            labelColor: colors.ink,
-            unselectedLabelColor: colors.inkSoft,
-            indicatorColor: colors.ink,
             tabs: <Widget>[
               Tab(text: context.l10n.friendsTabFriends),
               Tab(
@@ -96,7 +92,7 @@ class _FriendsScreenState extends ConsumerState<FriendsScreen>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.sketch.paper,
+      backgroundColor: context.palette.surface,
       builder: (BuildContext sheetContext) => const _SearchSheet(),
     );
   }
@@ -139,11 +135,11 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
     final AsyncValue<FriendsState> friends = ref.watch(friendsProvider);
 
     return friends.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, StackTrace stack) => SketchEmptyState(
+      loading: () => const AppLoadingState(),
+      error: (Object error, StackTrace stack) => AppEmptyState(
         message: error is Failure ? error.message : context.l10n.errorUnknown,
         icon: Icons.cloud_off_outlined,
-        action: SketchButton(
+        action: AppButton(
           label: context.l10n.retry,
           onPressed: () => ref.read(friendsProvider.notifier).refresh(),
         ),
@@ -156,7 +152,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
               physics: const AlwaysScrollableScrollPhysics(),
               children: <Widget>[
                 SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-                SketchEmptyState(
+                AppEmptyState(
                   message: context.l10n.friendsEmpty,
                   icon: Icons.group_outlined,
                 ),
@@ -186,7 +182,7 @@ class _FriendsTabState extends ConsumerState<_FriendsTab> {
                   ),
                   trailing: Icon(
                     Icons.chevron_right,
-                    color: context.sketch.inkSoft,
+                    color: context.palette.textMuted,
                   ),
                 ),
               );
@@ -209,7 +205,7 @@ class _BlockedTab extends ConsumerWidget {
         friends.valueOrNull?.blocked ?? const <BlockedPlayer>[];
 
     if (friends.isLoading && blocked.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingState();
     }
 
     if (blocked.isEmpty) {
@@ -219,7 +215,7 @@ class _BlockedTab extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           children: <Widget>[
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-            SketchEmptyState(
+            AppEmptyState(
               message: context.l10n.friendsBlockedEmpty,
               icon: Icons.block_outlined,
             ),
@@ -287,7 +283,7 @@ class _BlockedRowState extends ConsumerState<_BlockedRow> {
     return PlayerTile(
       card: widget.entry.card,
       subtitle: context.l10n.friendBlocked,
-      trailing: SketchButton(
+      trailing: AppButton(
         label: context.l10n.friendUnblock,
         busy: _busy,
         onPressed: _busy ? null : _unblock,
@@ -368,7 +364,7 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Padding(
       // Lifts the sheet clear of the keyboard, so the field stays visible.
@@ -407,8 +403,8 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
                     borderRadius:
                         BorderRadius.circular(AppSpacing.radiusMd),
                     borderSide: BorderSide(
-                      color: colors.ink,
-                      width: AppSpacing.border,
+                      color: colors.border,
+                      width: AppSpacing.hairline,
                     ),
                   ),
                 ),
@@ -423,10 +419,10 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
 
   Widget _body(ScrollController scroll) {
     if (_failure != null) {
-      return SketchEmptyState(
+      return AppEmptyState(
         message: _failure!.message,
         icon: Icons.cloud_off_outlined,
-        action: SketchButton(
+        action: AppButton(
           label: context.l10n.retry,
           onPressed: () => _search(_lastTerm),
         ),
@@ -434,14 +430,14 @@ class _SearchSheetState extends ConsumerState<_SearchSheet> {
     }
 
     if (_lastTerm.length < 2) {
-      return SketchEmptyState(
+      return AppEmptyState(
         message: context.l10n.friendsSearchPrompt,
         icon: Icons.search,
       );
     }
 
     if (_results.isEmpty) {
-      return SketchEmptyState(
+      return AppEmptyState(
         message:
             _searching ? context.l10n.loading : context.l10n.friendsSearchEmpty,
         icon: Icons.person_off_outlined,
@@ -526,7 +522,7 @@ class _SearchActionState extends ConsumerState<_SearchAction> {
         _Tag(label: context.l10n.friendRequestsIncoming),
       SocialRelation.blocked => _Tag(label: context.l10n.friendBlocked),
       SocialRelation.self => const SizedBox.shrink(),
-      SocialRelation.none => SketchButton(
+      SocialRelation.none => AppButton(
           label: context.l10n.friendAdd,
           icon: Icons.person_add_alt,
           busy: _busy,
@@ -549,7 +545,7 @@ class _Tag extends StatelessWidget {
       style: Theme.of(context)
           .textTheme
           .labelMedium
-          ?.copyWith(color: context.sketch.inkSoft),
+          ?.copyWith(color: context.palette.textMuted),
     );
   }
 }

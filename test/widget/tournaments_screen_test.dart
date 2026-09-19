@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scribble_guess/core/constants/app_strings.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/features/tournaments/tournaments_screen.dart';
 import 'package:scribble_guess/models/auto_tournament.dart';
 import 'package:scribble_guess/providers/providers.dart';
@@ -113,7 +113,7 @@ void main() {
     // Three rows in, three cards out. The screen adds nothing of its own —
     // no placeholder for a slot that does not exist, which is what the old
     // three-slot listing drew and what made a fourth card conceivable.
-    expect(find.byType(SketchCard), findsNWidgets(3));
+    expect(find.byType(AppCard), findsNWidgets(3));
   });
 
   testWidgets('draws only the cards the day actually has',
@@ -141,7 +141,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(SketchCard), findsNWidgets(2));
+    expect(find.byType(AppCard), findsNWidgets(2));
     expect(find.text(AppStrings.tournamentSlotEmpty), findsNothing);
   });
 

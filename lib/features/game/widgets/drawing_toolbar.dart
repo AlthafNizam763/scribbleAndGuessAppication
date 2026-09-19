@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
+import 'package:scribble_guess/core/widgets/app_button.dart';
 import 'package:scribble_guess/features/game/widgets/tool_tray_sheet.dart';
 import 'package:scribble_guess/models/drawing_board.dart';
 import 'package:scribble_guess/models/enums.dart';
@@ -40,7 +41,7 @@ class DrawingToolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final DrawToolState tool = ref.watch(drawToolProvider);
     final DrawToolNotifier notifier = ref.read(drawToolProvider.notifier);
     final DrawingBoard board = ref.watch(boardProvider);
@@ -79,10 +80,10 @@ class DrawingToolbar extends ConsumerWidget {
                       color: Color(value),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: colors.ink,
+                        color: active ? colors.primary : colors.border,
                         width: active
-                            ? AppSpacing.border + 2
-                            : AppSpacing.border,
+                            ? AppSpacing.borderThick
+                            : AppSpacing.hairline,
                       ),
                     ),
                   ),
@@ -135,21 +136,21 @@ class DrawingToolbar extends ConsumerWidget {
               onPressed: () => notifier.selectTool(DrawTool.eraser),
             ),
             _ToolButton(
-              icon: Icons.undo,
+              icon: Icons.undo_rounded,
               tooltip: context.l10n.gameUndo,
               onPressed: board.canUndo
                   ? () => ref.read(drawingRepositoryProvider).undo()
                   : null,
             ),
             _ToolButton(
-              icon: Icons.redo,
+              icon: Icons.redo_rounded,
               tooltip: context.l10n.gameRedo,
               onPressed: board.canRedo
                   ? () => ref.read(drawingRepositoryProvider).redo()
                   : null,
             ),
             _ToolButton(
-              icon: Icons.delete_outline,
+              icon: Icons.delete_outline_rounded,
               tooltip: context.l10n.gameClear,
               danger: true,
               onPressed: board.canUndo ? onClear : null,
@@ -173,7 +174,7 @@ class _CustomColorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Semantics(
       button: true,
@@ -188,7 +189,7 @@ class _CustomColorButton extends StatelessWidget {
           width: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: colors.ink, width: AppSpacing.border),
+            border: Border.all(color: colors.border, width: AppSpacing.hairline),
             gradient: const SweepGradient(
               colors: <Color>[
                 Color(0xFFD64545),
@@ -200,7 +201,7 @@ class _CustomColorButton extends StatelessWidget {
               ],
             ),
           ),
-          child: Icon(Icons.add, size: 18, color: colors.canvasWhite),
+          child: Icon(Icons.add, size: 18, color: colors.canvas),
         ),
       ),
     );
@@ -221,7 +222,7 @@ class _NibButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Semantics(
       button: true,
@@ -237,15 +238,15 @@ class _NibButton extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: selected ? colors.ink : colors.inkFaint,
-              width: selected ? AppSpacing.border : 1,
+              color: selected ? colors.primary : colors.border,
+              width: selected ? AppSpacing.borderThick : AppSpacing.hairline,
             ),
           ),
           child: Container(
             height: width.clamp(2.0, 20.0),
             width: width.clamp(2.0, 20.0),
             decoration: BoxDecoration(
-              color: colors.ink,
+              color: colors.text,
               shape: BoxShape.circle,
             ),
           ),
@@ -272,25 +273,15 @@ class _ToolButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
-    final bool enabled = onPressed != null;
+    final AppPalette colors = context.palette;
 
-    final Color tint = !enabled
-        ? colors.inkFaint
-        : danger
-            ? colors.danger
-            : colors.ink;
-
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon),
+    return AppIconButton(
+      icon: icon,
       tooltip: tooltip,
-      color: tint,
-      style: selected
-          ? IconButton.styleFrom(
-              backgroundColor: colors.ink.withValues(alpha: 0.12),
-            )
-          : null,
+      onPressed: onPressed,
+      selected: selected,
+      tone: danger ? colors.danger : colors.primary,
+      size: 42,
     );
   }
 }

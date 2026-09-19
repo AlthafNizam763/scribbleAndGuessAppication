@@ -7,13 +7,49 @@ abstract final class AppRoutes {
   static const String splash = 'splash';
   static const String splashPath = '/';
 
-  /// Name and avatar. Also the first stop when no profile exists yet.
+  /// Email sign-in. The gate every unauthenticated route funnels back to.
+  static const String login = 'login';
+  static const String loginPath = '/login';
+
+  /// Account creation, reached from the sign-in screen.
+  ///
+  /// Also the upgrade path: a player already signed in as a guest lands here
+  /// from their profile, and registering keeps the account they have been
+  /// playing on rather than starting a second one.
+  static const String register = 'register';
+  static const String registerPath = '/register';
+
+  /// The player's own card: avatar, name and career record. Read-only.
   static const String profile = 'profile';
   static const String profilePath = '/profile';
+
+  /// Name, avatar, colour and town. Also the first stop when no profile exists.
+  ///
+  /// A child of `/profile` rather than a sibling, because it is what that
+  /// screen's Edit button opens — and because a deep link to the editor should
+  /// leave the card behind it in the back stack.
+  ///
+  /// The router's no-profile redirect aims here rather than at the card: a
+  /// player without a name needs the form, not a record of nothing.
+  static const String editProfile = 'editProfile';
+  static const String editProfilePath = '/profile/edit';
 
   /// The main menu.
   static const String home = 'home';
   static const String homePath = '/home';
+
+  /// One game’s lobby; the game id is the shared backend wire identifier.
+  static const String gameLobby = 'gameLobby';
+  static const String gameLobbyPath = '/games/:gameId';
+
+  /// A platform game, being played. Landscape, and the game id picks which.
+  ///
+  /// One route for all four rather than four routes, because everything that
+  /// differs between them is inside the screen: the room, the match and the
+  /// socket session are the same objects whichever game is on the table, and
+  /// four routes would be four copies of the same guard.
+  static const String platformGame = 'platformGame';
+  static const String platformGamePath = '/games/:gameId/play';
 
   /// Room rules before hosting.
   static const String createRoom = 'createRoom';

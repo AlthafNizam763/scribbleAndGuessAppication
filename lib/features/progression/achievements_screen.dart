@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_button.dart';
-import 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
+import 'package:scribble_guess/core/widgets/app_button.dart';
+import 'package:scribble_guess/core/widgets/app_scaffold.dart';
 import 'package:scribble_guess/features/progression/achievement_card.dart';
 import 'package:scribble_guess/features/progression/xp_progress_widget.dart';
 import 'package:scribble_guess/models/progression.dart';
@@ -42,15 +42,15 @@ class AchievementsScreen extends ConsumerWidget {
             .whenData((Progression value) => value.achievements)
         : ref.watch(playerAchievementsProvider(userId!));
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.achievementsTitle,
       padded: false,
       child: page.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.errorUnknown,
           icon: Icons.cloud_off_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: () => _refresh(ref, isSelf: isSelf),
           ),
@@ -86,7 +86,7 @@ class _Catalogue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     // Unlocked first, then by how close the rest are — a player scrolling down
@@ -111,11 +111,11 @@ class _Catalogue extends StatelessWidget {
           ],
           Text(
             context.l10n.achievementsUnlockedOf(page.unlockedCount, page.totalCount),
-            style: text.labelMedium?.copyWith(color: colors.inkSoft),
+            style: text.labelMedium?.copyWith(color: colors.textMuted),
           ),
           const SizedBox(height: AppSpacing.md),
           if (sorted.isEmpty)
-            SketchEmptyState(
+            AppEmptyState(
               message: context.l10n.achievementsEmpty,
               icon: Icons.workspace_premium_outlined,
             )

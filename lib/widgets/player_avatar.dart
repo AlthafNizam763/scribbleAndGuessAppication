@@ -53,7 +53,7 @@ class PlayerAvatar extends StatelessWidget {
   final int colorIndex;
   final double size;
 
-  /// Draws a heavier ring, for the avatar picker.
+  /// Draws a heavier ring in the primary, for the avatar picker.
   final bool selected;
 
   /// Fades the face, for players who have dropped off the connection.
@@ -67,8 +67,8 @@ class PlayerAvatar extends StatelessWidget {
   /// player's badge, and the character on top of it stays the thing you
   /// actually read. Exposed so the profile screen's colour swatches can show
   /// the disc a player is really choosing.
-  static Color discColor(SketchColors colors, int colorIndex) =>
-      Color.lerp(colors.accentAt(colorIndex), colors.canvasWhite, 0.38)!;
+  static Color discColor(AppPalette colors, int colorIndex) =>
+      Color.lerp(colors.accentAt(colorIndex), colors.canvas, 0.38)!;
 
   /// Outline weight for an avatar drawn at [size].
   ///
@@ -86,9 +86,9 @@ class PlayerAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final AvatarFace face = AvatarCatalog.faceAt(avatarId);
-    final double ring = selected ? AppSpacing.border + 1 : AppSpacing.border;
+    final double ring = selected ? AppSpacing.borderThick : AppSpacing.border;
     final String label = '${context.l10n.a11yAvatar}: ${face.name}';
 
     final Widget avatar = Opacity(
@@ -114,7 +114,10 @@ class PlayerAvatar extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: colors.ink, width: ring),
+                border: Border.all(
+                  color: selected ? colors.primary : colors.border,
+                  width: ring,
+                ),
               ),
             ),
           ],

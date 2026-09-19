@@ -5,6 +5,7 @@ import 'package:scribble_guess/providers/auth_provider.dart';
 import 'package:scribble_guess/repositories/impl/socket_chat_repository.dart';
 import 'package:scribble_guess/repositories/impl/socket_drawing_repository.dart';
 import 'package:scribble_guess/repositories/impl/socket_game_repository.dart';
+import 'package:scribble_guess/repositories/impl/socket_platform_game_repository.dart';
 import 'package:scribble_guess/repositories/impl/socket_room_repository.dart';
 import 'package:scribble_guess/repositories/repositories.dart';
 import 'package:scribble_guess/services/connectivity_service.dart';
@@ -125,6 +126,22 @@ final Provider<GameRepository> gameRepositoryProvider = Provider<GameRepository>
   (Ref ref) {
     final GameRepository repository =
         SocketGameRepository(ref.watch(gatewayProvider));
+    ref.onDispose(repository.dispose);
+    return repository;
+  },
+);
+
+/// The realtime seam for Kazhutha, Bluff Bar, Space Mystery and Ludo.
+///
+/// Kept alive for the whole session, like the gateway and the Scribble
+/// repositories above it: a player moves lobby → game → result → rematch
+/// without leaving the room, and rebuilding this between screens would drop
+/// the match the moment the screen that started it was popped.
+final Provider<PlatformGameRepository> platformGameRepositoryProvider =
+    Provider<PlatformGameRepository>(
+  (Ref ref) {
+    final PlatformGameRepository repository =
+        SocketPlatformGameRepository(ref.watch(gatewayProvider));
     ref.onDispose(repository.dispose);
     return repository;
   },

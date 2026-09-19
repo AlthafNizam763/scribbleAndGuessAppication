@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
+import 'package:scribble_guess/core/widgets/app_scaffold.dart';
 import 'package:scribble_guess/models/player.dart';
 import 'package:scribble_guess/theme/theme.dart';
 import 'package:scribble_guess/widgets/player_row.dart';
@@ -50,7 +50,7 @@ class RoomMembersList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Column(
@@ -62,18 +62,18 @@ class RoomMembersList extends StatelessWidget {
             Expanded(
               child: Text(
                 (title ?? context.l10n.roomMembersTitle).toUpperCase(),
-                style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                style: text.labelSmall?.copyWith(color: colors.textMuted),
               ),
             ),
             Text(
               '${players.length}/$maxPlayers',
-              style: text.labelSmall?.copyWith(color: colors.inkSoft),
+              style: text.labelSmall?.copyWith(color: colors.textMuted),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
         if (players.isEmpty)
-          SketchEmptyState(
+          AppEmptyState(
             message: context.l10n.lobbyEmptyPlayers,
             icon: Icons.person_outline,
           )

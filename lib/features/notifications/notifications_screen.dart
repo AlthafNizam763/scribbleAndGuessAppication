@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
 import 'package:scribble_guess/core/utils/result.dart';
-import 'package:scribble_guess/core/widgets/sketch_button.dart';
-import 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
+import 'package:scribble_guess/core/widgets/app_button.dart';
+import 'package:scribble_guess/core/widgets/app_scaffold.dart';
 import 'package:scribble_guess/features/notifications/notification_card.dart';
 import 'package:scribble_guess/features/notifications/notification_icons.dart';
 import 'package:scribble_guess/models/app_notification.dart';
@@ -43,14 +43,14 @@ class NotificationsScreen extends ConsumerWidget {
     final NotificationsNotifier notifier =
         ref.read(notificationsProvider.notifier);
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.notificationsTitle,
       padded: false,
       actions: <Widget>[
         if ((inbox.valueOrNull?.unreadCount ?? 0) > 0)
-          IconButton(
+          AppIconButton(
             tooltip: context.l10n.notificationsMarkAllRead,
-            icon: const Icon(Icons.done_all),
+            icon: Icons.done_all_rounded,
             onPressed: () => _markAllRead(context, notifier),
           ),
       ],
@@ -63,12 +63,12 @@ class NotificationsScreen extends ConsumerWidget {
           ),
           Expanded(
             child: inbox.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object error, StackTrace stack) => SketchEmptyState(
+              loading: () => const AppLoadingState(),
+              error: (Object error, StackTrace stack) => AppEmptyState(
                 message:
                     error is Failure ? error.message : context.l10n.errorUnknown,
                 icon: Icons.cloud_off_outlined,
-                action: SketchButton(
+                action: AppButton(
                   label: context.l10n.retry,
                   onPressed: notifier.refresh,
                 ),
@@ -168,7 +168,7 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Padding(
@@ -185,17 +185,17 @@ class _FilterBar extends StatelessWidget {
               unreadCount == 0
                   ? context.l10n.notificationsAllRead
                   : '$unreadCount ${context.l10n.notificationsUnreadOnly.toLowerCase()}',
-              style: text.labelMedium?.copyWith(color: colors.inkSoft),
+              style: text.labelMedium?.copyWith(color: colors.textMuted),
             ),
           ),
-          SketchButton(
+          AppButton(
             label: context.l10n.notificationsUnreadOnly,
             icon: unreadOnly
                 ? Icons.check_box_outlined
                 : Icons.check_box_outline_blank,
             variant: unreadOnly
-                ? SketchButtonVariant.primary
-                : SketchButtonVariant.ghost,
+                ? AppButtonVariant.primary
+                : AppButtonVariant.ghost,
             onPressed: () => onChanged(!unreadOnly),
           ),
         ],
@@ -231,7 +231,7 @@ class _InboxList extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           children: <Widget>[
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-            SketchEmptyState(
+            AppEmptyState(
               message: unreadOnly
                   ? context.l10n.notificationsAllRead
                   : context.l10n.notificationsEmpty,

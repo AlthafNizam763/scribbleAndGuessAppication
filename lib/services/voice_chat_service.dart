@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:scribble_guess/app/app_config.dart';
 import 'package:scribble_guess/core/constants/app_strings.dart';
-import 'package:scribble_guess/core/constants/socket_events.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/utils/app_logger.dart';
 import 'package:scribble_guess/core/utils/result.dart';
 import 'package:scribble_guess/models/json_utils.dart';
 import 'package:scribble_guess/models/voice_peer.dart';
 import 'package:scribble_guess/repositories/realtime_gateway.dart';
+import 'package:scribble_guess/services/voice/voice_dialect.dart';
 
 /// The gateway's inbound record, aliased for readability.
 typedef _Inbound = ({String event, Map<String, dynamic> data});
@@ -59,8 +59,17 @@ class VoiceChatService {
   VoiceChatService({
     required RealtimeGateway gateway,
     required String selfId,
+    /**
+     * Which protocol to speak.
+     *
+     * Defaults to Scribble's so every existing call site is unchanged. The
+     * platform games pass their own, and nothing else about this service
+     * differs between them — see `VoiceDialect`.
+     */
+    VoiceDialect dialect = VoiceDialect.scribble,
   })  : _gateway = gateway,
-        _selfId = selfId {
+        _selfId = selfId,
+        _dialect = dialect {
     _inboundSubscription = _gateway.inbound.listen(
       _onInbound,
       onError: (Object error, StackTrace stackTrace) {
@@ -85,6 +94,7 @@ class VoiceChatService {
 
   final RealtimeGateway _gateway;
   final String _selfId;
+  final VoiceDialect _dialect;
 
   final StreamController<VoiceChatState> _stateController =
       StreamController<VoiceChatState>.broadcast();
@@ -173,7 +183,7 @@ class VoiceChatService {
     if (stream == null) return;
 
     final Result<Map<String, dynamic>> ack =
-        await _gateway.request(SocketEvents.clientVoiceJoin);
+        await _gateway.request(_dialect.clientJoin, _dialect.envelope());
 
     if (ack case Err<Map<String, dynamic>>(:final failure)) {
       AppLogger.w('VoiceChatService: join refused - ${failure.message}');
@@ -245,7 +255,7 @@ class VoiceChatService {
       // Fire and forget. The server drops us anyway when the turn changes, so
       // a failure here costs nothing and must not hold up the teardown.
       unawaited(
-        _gateway.request(SocketEvents.clientVoiceLeave).then((_) {}),
+        _gateway.request(_dialect.clientLeave, _dialect.envelope()).then((_) {}),
       );
     }
 
@@ -270,8 +280,8 @@ class VoiceChatService {
     if (!_state.isJoined) return;
 
     final Result<Map<String, dynamic>> ack = await _gateway.request(
-      SocketEvents.clientVoiceMute,
-      <String, dynamic>{'muted': muted},
+      _dialect.clientMute,
+      <String, dynamic>{..._dialect.envelope(), 'muted': muted},
     );
 
     // A refused mute is not worth surfacing: the track is already disabled, so
@@ -476,8 +486,9 @@ class VoiceChatService {
       // forwarded rather than dropped: a peer that never receives it waits for
       // more that are not coming.
       _gateway.emit(
-        SocketEvents.clientVoiceIce,
+        _dialect.clientIce,
         <String, dynamic>{
+          ..._dialect.envelope(),
           'targetId': peerId,
           'candidate': <String, dynamic>{
             'candidate': candidate.candidate,
@@ -528,8 +539,9 @@ class VoiceChatService {
     await link.connection.setLocalDescription(offer);
 
     _gateway.emit(
-      SocketEvents.clientVoiceOffer,
+      _dialect.clientOffer,
       <String, dynamic>{
+        ..._dialect.envelope(),
         'targetId': link.peer.userId,
         'description': <String, dynamic>{'type': offer.type, 'sdp': offer.sdp},
       },
@@ -597,24 +609,33 @@ class VoiceChatService {
   // Inbound signalling
   // ---------------------------------------------------------------------------
 
+  /// Routes an inbound frame, in whichever dialect this service speaks.
+  ///
+  /// A chain rather than a `switch`, because the cases are no longer compile
+  /// time constants — the platform dialect's names differ from Scribble's, and
+  /// both services listen to the same gateway stream. A frame in the other
+  /// dialect simply matches nothing and is ignored, which is what lets a
+  /// Scribble match and a platform match be open at once without either
+  /// hearing the other's signalling.
   void _onInbound(_Inbound message) {
-    switch (message.event) {
-      case SocketEvents.serverVoiceState:
-        unawaited(_onServerState(message.data));
-      case SocketEvents.serverVoicePeerJoined:
-        unawaited(_onPeerJoined(message.data));
-      case SocketEvents.serverVoicePeerLeft:
-        unawaited(_onPeerLeft(message.data));
-      case SocketEvents.serverVoiceOffer:
-        unawaited(_onOffer(message.data));
-      case SocketEvents.serverVoiceAnswer:
-        unawaited(_onAnswer(message.data));
-      case SocketEvents.serverVoiceIce:
-        unawaited(_onCandidate(message.data));
-      case SocketEvents.serverVoiceMute:
-        _onPeerMute(message.data);
-      case SocketEvents.serverVoiceError:
-        unawaited(_onError(message.data));
+    final String event = message.event;
+
+    if (event == _dialect.serverState) {
+      unawaited(_onServerState(message.data));
+    } else if (event == _dialect.serverPeerJoined) {
+      unawaited(_onPeerJoined(message.data));
+    } else if (event == _dialect.serverPeerLeft) {
+      unawaited(_onPeerLeft(message.data));
+    } else if (event == _dialect.serverOffer) {
+      unawaited(_onOffer(message.data));
+    } else if (event == _dialect.serverAnswer) {
+      unawaited(_onAnswer(message.data));
+    } else if (event == _dialect.serverIce) {
+      unawaited(_onCandidate(message.data));
+    } else if (event == _dialect.serverMute) {
+      _onPeerMute(message.data);
+    } else if (event == _dialect.serverError) {
+      unawaited(_onError(message.data));
     }
   }
 
@@ -625,14 +646,9 @@ class VoiceChatService {
   /// this player becomes the drawer.
   Future<void> _onServerState(Map<String, dynamic> data) async {
     final bool enabled = asBool(data['enabled']);
-    final bool isDrawer = asBool(data['isDrawer']);
 
     if (!enabled) {
-      _publish(
-        _state.copyWith(
-          role: isDrawer ? VoiceRole.drawer : VoiceRole.disabled,
-        ),
-      );
+      _publish(_state.copyWith(role: _dialect.roleFrom(data)));
       // The server has already removed us, so there is nothing to announce.
       await disable();
       return;
@@ -663,7 +679,7 @@ class VoiceChatService {
   }
 
   Future<void> _onPeerJoined(Map<String, dynamic> data) async {
-    final VoicePeer peer = VoicePeer.fromJson(asMap(data['peer']));
+    final VoicePeer peer = _dialect.peerFrom(data);
     if (peer.userId.isEmpty || peer.userId == _selfId) return;
     if (!_state.isJoined) return;
 
@@ -671,13 +687,13 @@ class VoiceChatService {
   }
 
   Future<void> _onPeerLeft(Map<String, dynamic> data) async {
-    final String userId = asString(data['userId']);
+    final String userId = _dialect.leaverOf(data);
     if (userId.isEmpty) return;
     await _closePeer(userId);
   }
 
   Future<void> _onOffer(Map<String, dynamic> data) async {
-    final String from = asString(data['from']);
+    final String from = _dialect.senderOf(data);
     if (from.isEmpty || !_state.isJoined) return;
 
     // An offer from somebody not yet in the map is the normal case for the
@@ -709,8 +725,9 @@ class VoiceChatService {
       await link.connection.setLocalDescription(answer);
 
       _gateway.emit(
-        SocketEvents.clientVoiceAnswer,
+        _dialect.clientAnswer,
         <String, dynamic>{
+          ..._dialect.envelope(),
           'targetId': from,
           'description': <String, dynamic>{
             'type': answer.type,
@@ -725,7 +742,7 @@ class VoiceChatService {
   }
 
   Future<void> _onAnswer(Map<String, dynamic> data) async {
-    final String from = asString(data['from']);
+    final String from = _dialect.senderOf(data);
     final _PeerLink? link = _links[from];
     if (link == null) return;
 
@@ -745,7 +762,7 @@ class VoiceChatService {
   }
 
   Future<void> _onCandidate(Map<String, dynamic> data) async {
-    final String from = asString(data['from']);
+    final String from = _dialect.senderOf(data);
     final _PeerLink? link = _links[from];
     if (link == null) return;
 
@@ -764,7 +781,7 @@ class VoiceChatService {
   }
 
   void _onPeerMute(Map<String, dynamic> data) {
-    final String userId = asString(data['userId']);
+    final String userId = _dialect.leaverOf(data);
     final VoicePeer? peer = _state.peers[userId];
     if (peer == null) return;
     _upsertPeer(peer.copyWith(muted: asBool(data['muted'])));

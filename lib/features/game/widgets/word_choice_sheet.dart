@@ -44,7 +44,7 @@ class _WordChoiceSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     // The phase is the authority on whether there is still a word to choose.
@@ -66,23 +66,23 @@ class _WordChoiceSheet extends ConsumerWidget {
             children: <Widget>[
               Text(
                 context.l10n.gameChooseWord,
-                style: text.titleLarge?.copyWith(color: colors.ink),
+                style: text.headlineSmall?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.lg),
               for (int i = 0; i < choices.length; i++)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: SketchCard(
+                  child: AppCard(
                     onTap: () => Navigator.of(context).pop(i),
                     child: Row(
                       children: <Widget>[
                         Expanded(
                           child: Text(
                             choices[i].text,
-                            style: text.titleMedium?.copyWith(color: colors.ink),
+                            style: text.titleLarge?.copyWith(color: colors.text),
                           ),
                         ),
-                        SketchBadge(
+                        HudBadge(
                           label: choices[i].difficulty.label,
                           color: switch (choices[i].difficulty) {
                             WordDifficulty.easy => colors.success,

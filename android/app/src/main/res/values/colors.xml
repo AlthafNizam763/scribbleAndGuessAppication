@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Kept in step with AppColors.paper in lib/theme/app_colors.dart, so the
+    <!-- Kept in step with AppColors.bg in lib/theme/app_colors.dart, so the
          window the system paints before Flutter starts is the same page the
          first frame draws on and there is no flash between the two. -->
-    <color name="ic_launcher_background">#FBF7EF</color>
-    <color name="launch_background">#FBF7EF</color>
+    <color name="ic_launcher_background">#6C4DFF</color>
+    <color name="launch_background">#F5F4FA</color>
 </resources>

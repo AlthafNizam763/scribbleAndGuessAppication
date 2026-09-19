@@ -158,15 +158,15 @@ class _TournamentDetailScreenState
     final AsyncValue<AutoTournament> tournament =
         ref.watch(tournamentDetailProvider(widget.tournamentId));
 
-    return SketchScaffold(
+    return AppScaffold(
       title: tournament.valueOrNull?.name ?? context.l10n.tournamentsTitle,
       padded: false,
       child: tournament.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.errorUnknown,
           icon: Icons.cloud_off_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: _refresh,
           ),
@@ -229,11 +229,11 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final ViewerTournamentState viewer = tournament.viewer;
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -245,7 +245,7 @@ class _Summary extends StatelessWidget {
                   '${tournament.dailySlot.label}'
                   '  ·  ${TimeUtils.formatClock(tournament.startAtMs)}'
                   '  ·  ${context.l10n.tournamentFormatKnockout}',
-                  style: text.bodySmall?.copyWith(color: colors.inkFaint),
+                  style: text.bodySmall?.copyWith(color: colors.textFaint),
                 ),
               ),
               TournamentStatusChip(status: tournament.status),
@@ -255,7 +255,7 @@ class _Summary extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               tournament.description,
-              style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+              style: text.bodyMedium?.copyWith(color: colors.textMuted),
             ),
           ],
 
@@ -268,7 +268,7 @@ class _Summary extends StatelessWidget {
             Text(
               '${context.l10n.tournamentRound} '
               '${tournament.currentRound} / ${tournament.totalRounds}',
-              style: text.bodySmall?.copyWith(color: colors.inkSoft),
+              style: text.bodySmall?.copyWith(color: colors.textMuted),
             ),
           ],
 
@@ -313,7 +313,7 @@ class _Summary extends StatelessWidget {
                     '${context.l10n.tournamentWinner} '
                     '${tournament.winner!.displayName}'
                     '${tournament.winner!.isBot ? ' 🤖' : ''}',
-                    style: text.titleSmall?.copyWith(color: colors.ink),
+                    style: text.titleSmall?.copyWith(color: colors.text),
                   ),
                 ),
               ],
@@ -363,7 +363,7 @@ class _PrimaryAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final ViewerTournamentState viewer = tournament.viewer;
     final ViewerMatch? match = viewer.activeMatch;
@@ -373,9 +373,9 @@ class _PrimaryAction extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          SketchButton(
+          AppButton(
             label: context.l10n.tournamentEnterMatch,
-            variant: SketchButtonVariant.primary,
+            variant: AppButtonVariant.primary,
             icon: Icons.play_arrow_rounded,
             busy: busy,
             expand: true,
@@ -395,9 +395,9 @@ class _PrimaryAction extends StatelessWidget {
     }
 
     if (viewer.canCheckIn) {
-      return SketchButton(
+      return AppButton(
         label: context.l10n.tournamentCheckIn,
-        variant: SketchButtonVariant.primary,
+        variant: AppButtonVariant.primary,
         busy: busy,
         expand: true,
         onPressed: onCheckIn,
@@ -405,9 +405,9 @@ class _PrimaryAction extends StatelessWidget {
     }
 
     if (viewer.canRegister) {
-      return SketchButton(
+      return AppButton(
         label: context.l10n.tournamentJoin,
-        variant: SketchButtonVariant.primary,
+        variant: AppButtonVariant.primary,
         busy: busy,
         expand: true,
         onPressed: onRegister,
@@ -424,7 +424,7 @@ class _PrimaryAction extends StatelessWidget {
               viewer.isCheckedIn
                   ? context.l10n.tournamentCheckedInShort
                   : context.l10n.tournamentRegisteredShort,
-              style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+              style: text.bodyMedium?.copyWith(color: colors.textMuted),
             ),
           ),
           if (viewer.canWithdraw)
@@ -452,7 +452,7 @@ class _Rules extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final List<(String, String)> rows = <(String, String)>[
@@ -464,13 +464,13 @@ class _Rules extends StatelessWidget {
       (context.l10n.tournamentFreeEntry, '✓'),
     ];
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             context.l10n.tournamentRules,
-            style: text.titleSmall?.copyWith(color: colors.ink),
+            style: text.titleSmall?.copyWith(color: colors.text),
           ),
           const SizedBox(height: AppSpacing.sm),
           for (final (String label, String value) in rows)
@@ -481,12 +481,12 @@ class _Rules extends StatelessWidget {
                   Expanded(
                     child: Text(
                       label,
-                      style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
                     ),
                   ),
                   Text(
                     value,
-                    style: text.bodySmall?.copyWith(color: colors.ink),
+                    style: text.bodySmall?.copyWith(color: colors.text),
                   ),
                 ],
               ),
@@ -505,24 +505,24 @@ class _Roster extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<List<TournamentParticipant>> roster =
         ref.watch(tournamentParticipantsProvider(tournamentId));
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             context.l10n.tournamentPlayers,
-            style: text.titleSmall?.copyWith(color: colors.ink),
+            style: text.titleSmall?.copyWith(color: colors.text),
           ),
           const SizedBox(height: AppSpacing.sm),
           roster.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
+              child: AppLoadingState(),
             ),
             error: (Object error, StackTrace stack) => Text(
               error is Failure ? error.message : context.l10n.errorUnknown,
@@ -531,7 +531,7 @@ class _Roster extends ConsumerWidget {
             data: (List<TournamentParticipant> players) => players.isEmpty
                 ? Text(
                     context.l10n.tournamentBoardEmpty,
-                    style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                    style: text.bodySmall?.copyWith(color: colors.textMuted),
                   )
                 : Column(
                     children: <Widget>[
@@ -543,7 +543,7 @@ class _Roster extends ConsumerWidget {
                               : Text(
                                   '#${player.seed}',
                                   style: text.bodySmall
-                                      ?.copyWith(color: colors.inkFaint),
+                                      ?.copyWith(color: colors.textFaint),
                                 ),
                         ),
                     ],
@@ -571,24 +571,24 @@ class _Bracket extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<TournamentBracket> bracket =
         ref.watch(tournamentBracketProvider(tournamentId));
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             context.l10n.tournamentBracket,
-            style: text.titleSmall?.copyWith(color: colors.ink),
+            style: text.titleSmall?.copyWith(color: colors.text),
           ),
           const SizedBox(height: AppSpacing.sm),
           bracket.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
+              child: AppLoadingState(),
             ),
             error: (Object error, StackTrace stack) => Text(
               error is Failure ? error.message : context.l10n.errorUnknown,
@@ -597,7 +597,7 @@ class _Bracket extends ConsumerWidget {
             data: (TournamentBracket draw) => draw.isEmpty
                 ? Text(
                     context.l10n.tournamentAwaiting,
-                    style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                    style: text.bodySmall?.copyWith(color: colors.textMuted),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,7 +625,7 @@ class _BracketRound extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Padding(
@@ -638,7 +638,7 @@ class _BracketRound extends StatelessWidget {
               Text(
                 round.name,
                 style: text.bodyMedium?.copyWith(
-                  color: isCurrent ? colors.ink : colors.inkSoft,
+                  color: isCurrent ? colors.text : colors.textMuted,
                   fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
                 ),
               ),
@@ -672,7 +672,7 @@ class _MatchCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final bool decided = match.status == TournamentMatchStatus.completed;
@@ -684,12 +684,14 @@ class _MatchCell extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: colors.paperDim,
+        color: colors.surfaceSunken,
         border: Border.all(
           // A match this player is in is the one thing on the page they need to
           // find, so it is the only cell that gets a drawn border.
-          color: match.roomCode != null ? colors.success : colors.inkFaint,
-          width: match.roomCode != null ? AppSpacing.border : 1,
+          color: match.roomCode != null ? colors.success : colors.border,
+          width: match.roomCode != null
+              ? AppSpacing.border
+              : AppSpacing.hairline,
         ),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       ),
@@ -701,7 +703,7 @@ class _MatchCell extends StatelessWidget {
             isWinner: decided &&
                 match.winnerRegistrationId == match.playerA?.registrationId,
           ),
-          Divider(height: AppSpacing.sm, color: colors.inkFaint, thickness: 0.5),
+          Divider(height: AppSpacing.sm, color: colors.textFaint, thickness: 0.5),
           _MatchSeat(
             player: match.playerB,
             score: decided ? match.scoreB : null,
@@ -716,7 +718,7 @@ class _MatchCell extends StatelessWidget {
                 match.isBye
                     ? context.l10n.tournamentBye
                     : context.l10n.tournamentWalkover,
-                style: text.bodySmall?.copyWith(color: colors.inkFaint),
+                style: text.bodySmall?.copyWith(color: colors.textFaint),
               ),
             ),
           ],
@@ -740,7 +742,7 @@ class _MatchSeat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     if (player == null) {
@@ -748,11 +750,11 @@ class _MatchSeat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: <Widget>[
-            Icon(Icons.more_horiz, size: 18, color: colors.inkFaint),
+            Icon(Icons.more_horiz, size: 18, color: colors.textFaint),
             const SizedBox(width: AppSpacing.sm),
             Text(
               context.l10n.tournamentAwaiting,
-              style: text.bodySmall?.copyWith(color: colors.inkFaint),
+              style: text.bodySmall?.copyWith(color: colors.textFaint),
             ),
           ],
         ),
@@ -774,7 +776,7 @@ class _MatchSeat extends StatelessWidget {
             Text(
               '$score',
               style: text.bodySmall?.copyWith(
-                color: isWinner ? colors.ink : colors.inkSoft,
+                color: isWinner ? colors.text : colors.textMuted,
                 fontWeight: isWinner ? FontWeight.w700 : FontWeight.w400,
               ),
             ),
@@ -793,24 +795,24 @@ class _Results extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<List<TournamentParticipant>> results =
         ref.watch(tournamentResultsProvider(tournamentId));
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             context.l10n.tournamentResults,
-            style: text.titleSmall?.copyWith(color: colors.ink),
+            style: text.titleSmall?.copyWith(color: colors.text),
           ),
           const SizedBox(height: AppSpacing.sm),
           results.when(
             loading: () => const Padding(
               padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
+              child: AppLoadingState(),
             ),
             error: (Object error, StackTrace stack) => Text(
               error is Failure ? error.message : context.l10n.errorUnknown,
@@ -823,7 +825,7 @@ class _Results extends ConsumerWidget {
                     player: row,
                     trailing: Text(
                       '${row.placement}',
-                      style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+                      style: text.bodyMedium?.copyWith(color: colors.textMuted),
                     ),
                   ),
               ],

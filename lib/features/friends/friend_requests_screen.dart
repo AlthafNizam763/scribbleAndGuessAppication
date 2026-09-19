@@ -23,7 +23,7 @@ class FriendRequestsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.friendRequestsTitle,
       padded: false,
       constrained: false,
@@ -42,11 +42,11 @@ class FriendRequestsView extends ConsumerWidget {
     final AsyncValue<FriendsState> friends = ref.watch(friendsProvider);
 
     return friends.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, StackTrace stack) => SketchEmptyState(
+      loading: () => const AppLoadingState(),
+      error: (Object error, StackTrace stack) => AppEmptyState(
         message: error is Failure ? error.message : context.l10n.errorUnknown,
         icon: Icons.cloud_off_outlined,
-        action: SketchButton(
+        action: AppButton(
           label: context.l10n.retry,
           onPressed: () => ref.read(friendsProvider.notifier).refresh(),
         ),
@@ -55,7 +55,7 @@ class FriendRequestsView extends ConsumerWidget {
         if (state.incoming.isEmpty && state.outgoing.isEmpty) {
           return _Refreshable(
             ref: ref,
-            child: SketchEmptyState(
+            child: AppEmptyState(
               message: context.l10n.friendRequestsEmpty,
               icon: Icons.mark_email_unread_outlined,
             ),
@@ -126,7 +126,7 @@ class _Heading extends StatelessWidget {
         style: Theme.of(context)
             .textTheme
             .labelSmall
-            ?.copyWith(color: context.sketch.inkSoft),
+            ?.copyWith(color: context.palette.textMuted),
       ),
     );
   }
@@ -186,11 +186,11 @@ class _IncomingRowState extends ConsumerState<_IncomingRow> {
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: SketchButton(
+                  child: AppButton(
                     label: context.l10n.friendAccept,
                     icon: Icons.check,
                     expand: true,
-                    variant: SketchButtonVariant.primary,
+                    variant: AppButtonVariant.primary,
                     busy: _busy,
                     onPressed: () =>
                         _run(() => actions.accept(widget.request.id)),
@@ -198,7 +198,7 @@ class _IncomingRowState extends ConsumerState<_IncomingRow> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: SketchButton(
+                  child: AppButton(
                     label: context.l10n.friendReject,
                     expand: true,
                     onPressed: _busy
@@ -256,7 +256,7 @@ class _OutgoingRowState extends ConsumerState<_OutgoingRow> {
           AppRoutes.playerProfile,
           pathParameters: <String, String>{'userId': card.id},
         ),
-        trailing: SketchButton(
+        trailing: AppButton(
           label: context.l10n.cancel,
           busy: _busy,
           onPressed: _busy ? null : _cancel,

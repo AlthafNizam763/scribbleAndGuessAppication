@@ -1,4 +1,4 @@
-// Renders every piece of Scribble & Guess branding from the geometry in
+// Renders every piece of STUPID GAMES branding from the geometry in
 // `lib/theme/brand.dart`.
 //
 //   flutter test tool/generate_brand_assets.dart
@@ -175,29 +175,28 @@ void _mark(
   Canvas canvas,
   double size, {
   required double scale,
-  Color ink = Brand.iconInk,
-  Color accent = Brand.iconAccent,
+  BrandInk ink = BrandInk.full,
 }) {
   final double edge = size * scale;
   final double inset = (size - edge) / 2;
   canvas.save();
   canvas.translate(inset, inset);
-  BrandMarkPainter(ink: ink, accent: accent).paint(canvas, Size(edge, edge));
+  BrandMarkPainter(ink: ink).paint(canvas, Size(edge, edge));
   canvas.restore();
 }
 
-/// Paper to the edges. For iOS and Android maskable art, which must be opaque
+/// Plate to the edges. For iOS and Android maskable art, which must be opaque
 /// because the platform crops them to a shape of its own choosing.
 void _square(Canvas canvas, double size, {double scale = Brand.iconScale}) {
   canvas.drawRect(
     Rect.fromLTWH(0, 0, size, size),
-    Paint()..color = Brand.iconPaper,
+    Paint()..color = Brand.iconPlate,
   );
   _mark(canvas, size, scale: scale);
 }
 
-/// A rounded paper plate on transparency. For the places that draw an icon
-/// exactly as given — legacy Android launchers, macOS, the web, Windows.
+/// A rounded plate on transparency. For the places that draw an icon exactly
+/// as given — legacy Android launchers, macOS, the web, Windows.
 void _rounded(Canvas canvas, double size) {
   canvas.drawRRect(
     RRect.fromRectAndRadius(
@@ -205,7 +204,7 @@ void _rounded(Canvas canvas, double size) {
       Radius.circular(size * _plateRadius),
     ),
     Paint()
-      ..color = Brand.iconPaper
+      ..color = Brand.iconPlate
       ..isAntiAlias = true,
   );
   _mark(canvas, size, scale: Brand.iconScale);
@@ -217,7 +216,7 @@ void _circle(Canvas canvas, double size) {
     Offset(size / 2, size / 2),
     size / 2,
     Paint()
-      ..color = Brand.iconPaper
+      ..color = Brand.iconPlate
       ..isAntiAlias = true,
   );
   _mark(canvas, size, scale: Brand.iconScale * 0.92);
@@ -239,20 +238,33 @@ void _macPlate(Canvas canvas, double size) {
 void _adaptiveForeground(Canvas canvas, double size) =>
     _mark(canvas, size, scale: Brand.maskableScale);
 
-/// The Android 13 themed-icon layer. Only alpha is read — the system supplies
-/// the colour — so the whole mark, dot included, is laid down in flat black.
+/// The Android 13 themed-icon layer.
+///
+/// Only alpha is read — the system supplies the colour — so every part of the
+/// cat goes down in one flat black. That flattens the coat and the face into
+/// a single blob, which is exactly what the platform wants: a stencil.
 void _monochrome(Canvas canvas, double size) => _mark(
   canvas,
   size,
   scale: Brand.maskableScale,
-  ink: const Color(0xFF000000),
-  accent: const Color(0xFF000000),
+  ink: BrandInk.flat(const Color(0xFF000000)),
 );
 
 /// Splash art: the bare mark, no plate, inked for one brightness.
-Composition _splashMark(Color ink, Color accent) =>
-    (Canvas canvas, double size) =>
-        _mark(canvas, size, scale: 1, ink: ink, accent: accent);
+Composition _splashMark(BrandInk ink) =>
+    (Canvas canvas, double size) => _mark(canvas, size, scale: 1, ink: ink);
+
+/// The mark as it is drawn on the dark theme's desk.
+///
+/// The coat keeps its orange — that is the brand — but the outline switches to
+/// chalk, because a near-black line on a near-black ground draws the cat as a
+/// hole rather than as a cat.
+const BrandInk _night = BrandInk(
+  fur: Brand.fur,
+  outline: AppColors.darkText,
+  light: AppColors.darkSurfaceActive,
+  accent: Brand.accent,
+);
 
 // ------------------------------------------------------------------ the ICO
 
@@ -333,12 +345,12 @@ void main() {
         await _write(
           '$android/drawable-${bucket.key}/splash_logo.png',
           splash,
-          _splashMark(AppColors.ink, AppColors.accentRed),
+          _splashMark(BrandInk.full),
         );
         await _write(
           '$android/drawable-night-${bucket.key}/splash_logo.png',
           splash,
-          _splashMark(AppColors.darkInk, AppColors.darkAccentRed),
+          _splashMark(_night),
         );
       }
 
@@ -380,12 +392,12 @@ void main() {
         await _write(
           '$launch/LaunchImage${scale.key}.png',
           scale.value,
-          _splashMark(AppColors.ink, AppColors.accentRed),
+          _splashMark(BrandInk.full),
         );
         await _write(
           '$launch/LaunchImage-dark${scale.key}.png',
           scale.value,
-          _splashMark(AppColors.darkInk, AppColors.darkAccentRed),
+          _splashMark(_night),
         );
       }
 
@@ -426,14 +438,14 @@ void main() {
       await _write('brand/app_icon_1024.png', 1024, _square);
       await _write('brand/icon_rounded_1024.png', 1024, _rounded);
       await _write(
-        'brand/mark_ink_1024.png',
+        'brand/mark_full_1024.png',
         1024,
-        _splashMark(AppColors.ink, AppColors.accentRed),
+        _splashMark(BrandInk.full),
       );
       await _write(
         'brand/mark_chalk_1024.png',
         1024,
-        _splashMark(AppColors.darkInk, AppColors.darkAccentRed),
+        _splashMark(_night),
       );
       await _write('brand/mark_monochrome_1024.png', 1024, _monochrome);
 

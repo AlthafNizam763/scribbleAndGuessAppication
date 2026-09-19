@@ -26,6 +26,41 @@ abstract final class Validators {
     return null;
   }
 
+  /// Validates an email address.
+  ///
+  /// Deliberately permissive. The only address that truly validates is one a
+  /// server accepted, and a strict pattern here would reject real addresses —
+  /// plus-tags, new top-level domains, non-Latin domains — while catching
+  /// nothing the server does not catch again. This exists to spare somebody a
+  /// round trip after an obvious typo, so it checks the shape and stops.
+  static String? email(String? value) {
+    final String address = (value ?? '').trim();
+    if (address.isEmpty) {
+      return AppStrings.authEmailRequired;
+    }
+    return _emailPattern.hasMatch(address)
+        ? null
+        : AppStrings.authEmailInvalid;
+  }
+
+  /// Validates a password being *set*, which has a length floor.
+  static String? newPassword(String? value) {
+    final String password = value ?? '';
+    if (password.isEmpty) {
+      return AppStrings.authPasswordRequired;
+    }
+    return password.length < _minPasswordLength
+        ? AppStrings.authPasswordTooShort
+        : null;
+  }
+
+  /// Validates a password being *entered* to sign in.
+  ///
+  /// Only checks that there is one. Refusing a stored password for failing
+  /// today's rules would lock out an account that was valid when it was made.
+  static String? password(String? value) =>
+      (value ?? '').isEmpty ? AppStrings.authPasswordRequired : null;
+
   /// Validates a room code, ignoring case and surrounding whitespace.
   static String? roomCode(String? value) {
     final String code = normalizeRoomCode(value);
@@ -103,6 +138,17 @@ abstract final class Validators {
   /// Whether [a] and [b] name the same room, ignoring case and whitespace.
   static bool sameRoomCode(String? a, String? b) =>
       normalizeRoomCode(a) == normalizeRoomCode(b);
+
+  /// The shortest password the server will accept when one is being set.
+  ///
+  /// Mirrors the floor in `registerSchema`. The server's is the one that
+  /// counts; this one exists so the message arrives before the round trip.
+  static const int _minPasswordLength = 8;
+
+  /// Something, an `@`, something with a dot in it, and no spaces anywhere.
+  ///
+  /// The loosest pattern that still catches a genuine typo. See [email].
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   /// Letters, digits, spaces, dots, hyphens and underscores.
   static final RegExp _namePattern =

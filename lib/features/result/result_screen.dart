@@ -162,14 +162,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
     return PopScope(
       canPop: false,
-      child: SketchScaffold(
+      child: AppScaffold(
         showBack: false,
         banner: const ConnectionBanner(),
         bottom: isFinal
             ? Row(
                 children: <Widget>[
                   Expanded(
-                    child: SketchButton(
+                    child: AppButton(
                       label: context.l10n.resultsBackHome,
                       icon: Icons.home_outlined,
                       expand: true,
@@ -178,11 +178,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: SketchButton(
+                    child: AppButton(
                       label: context.l10n.resultsPlayAgain,
                       icon: Icons.replay,
                       expand: true,
-                      variant: SketchButtonVariant.primary,
+                      variant: AppButtonVariant.primary,
                       busy: _busy,
                       onPressed: ref.watch(isHostProvider) ? _playAgain : null,
                     ),
@@ -206,13 +206,13 @@ class _RoundSummary extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final List<Player> players = ref.watch(playersProvider);
     final String selfId = ref.watch(selfIdProvider);
 
     if (result == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingState();
     }
 
     final RoundResult round = result!;
@@ -225,21 +225,24 @@ class _RoundSummary extends ConsumerWidget {
         Text(
           context.l10n.resultsRoundTitle,
           textAlign: TextAlign.center,
-          style: text.headlineSmall?.copyWith(color: colors.ink),
+          style: text.displaySmall?.copyWith(color: colors.text),
         ),
         const SizedBox(height: AppSpacing.lg),
-        SketchCard(
+        AppCard(
+          selected: true,
+          tone: colors.tertiary,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           child: Column(
             children: <Widget>[
               Text(
                 context.l10n.resultsWordWas.toUpperCase(),
-                style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                style: text.labelSmall?.copyWith(color: colors.tertiary),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 round.word,
                 textAlign: TextAlign.center,
-                style: text.displaySmall?.copyWith(color: colors.ink),
+                style: text.displaySmall?.copyWith(color: colors.text),
               ),
             ],
           ),
@@ -252,7 +255,7 @@ class _RoundSummary extends ConsumerWidget {
         // has nothing to fetch, and a button that could only fail is worse
         // than no button.
         if (round.gameId.isNotEmpty && round.turnNumber > 0) ...<Widget>[
-          SketchButton(
+          AppButton(
             label: context.l10n.replayWatch,
             icon: Icons.play_circle_outline,
             expand: true,
@@ -271,12 +274,12 @@ class _RoundSummary extends ConsumerWidget {
           Text(
             context.l10n.resultsNobodyGuessed,
             textAlign: TextAlign.center,
-            style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+            style: text.bodyMedium?.copyWith(color: colors.textMuted),
           ),
         const SizedBox(height: AppSpacing.lg),
         Text(
           context.l10n.resultsThisRound.toUpperCase(),
-          style: text.labelSmall?.copyWith(color: colors.inkSoft),
+          style: text.labelSmall?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: AppSpacing.sm),
         for (final Player player in players)
@@ -290,7 +293,7 @@ class _RoundSummary extends ConsumerWidget {
         Text(
           context.l10n.resultsNextRoundSoon,
           textAlign: TextAlign.center,
-          style: text.bodySmall?.copyWith(color: colors.inkSoft),
+          style: text.bodySmall?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
@@ -306,7 +309,7 @@ class _Delta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     if (points <= 0) {
@@ -405,7 +408,7 @@ class _ShareResultState extends ConsumerState<_ShareResult> {
         Row(
           children: <Widget>[
             Expanded(
-              child: SketchButton(
+              child: AppButton(
                 label: context.l10n.resultCopy,
                 icon: Icons.copy,
                 expand: true,
@@ -414,7 +417,7 @@ class _ShareResultState extends ConsumerState<_ShareResult> {
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: SketchButton(
+              child: AppButton(
                 label: context.l10n.resultShare,
                 icon: Icons.ios_share,
                 expand: true,
@@ -452,7 +455,7 @@ class _FinalStandings extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final String selfId = ref.watch(selfIdProvider);
     final PlayerScore? winner = result.winner;
@@ -466,7 +469,7 @@ class _FinalStandings extends ConsumerWidget {
           selfWon ? context.l10n.resultsYouWon : context.l10n.resultsFinalTitle,
           textAlign: TextAlign.center,
           style: text.headlineMedium?.copyWith(
-            color: selfWon ? colors.success : colors.ink,
+            color: selfWon ? colors.success : colors.text,
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
@@ -482,11 +485,11 @@ class _FinalStandings extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   winner.name,
-                  style: text.titleLarge?.copyWith(color: colors.ink),
+                  style: text.titleLarge?.copyWith(color: colors.text),
                 ),
                 Text(
                   '${winner.score}',
-                  style: text.displaySmall?.copyWith(color: colors.ink),
+                  style: text.displaySmall?.copyWith(color: colors.text),
                 ),
               ],
             ),
@@ -504,7 +507,7 @@ class _FinalStandings extends ConsumerWidget {
 
         Text(
           context.l10n.resultsTotals.toUpperCase(),
-          style: text.labelSmall?.copyWith(color: colors.inkSoft),
+          style: text.labelSmall?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: AppSpacing.sm),
         for (final PlayerScore score in result.standings)
@@ -529,25 +532,24 @@ class _StandingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: SketchCard(
+      child: AppCard(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
-        color: isSelf ? colors.paperShade : colors.paperDim,
-        borderColor: isSelf ? colors.ink : colors.inkFaint,
+        selected: isSelf,
         child: Row(
           children: <Widget>[
             SizedBox(
               width: 28,
               child: Text(
                 '${score.rank}',
-                style: text.titleMedium?.copyWith(color: colors.inkSoft),
+                style: text.titleMedium?.copyWith(color: colors.textMuted),
               ),
             ),
             PlayerAvatar(
@@ -560,12 +562,12 @@ class _StandingRow extends StatelessWidget {
               child: Text(
                 score.name,
                 overflow: TextOverflow.ellipsis,
-                style: text.titleSmall?.copyWith(color: colors.ink),
+                style: text.titleSmall?.copyWith(color: colors.text),
               ),
             ),
             Text(
               '${score.score}',
-              style: text.titleMedium?.copyWith(color: colors.ink),
+              style: text.titleMedium?.copyWith(color: colors.text),
             ),
           ],
         ),
@@ -595,12 +597,12 @@ class _MatchPayout extends StatelessWidget {
   Widget build(BuildContext context) {
     if (report.isEmpty) return const SizedBox.shrink();
 
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-      child: SketchCard(
+      child: AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -608,15 +610,12 @@ class _MatchPayout extends StatelessWidget {
               children: <Widget>[
                 Text(
                   context.l10n.progressionEarned.toUpperCase(),
-                  style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                  style: text.labelSmall?.copyWith(color: colors.textMuted),
                 ),
                 const Spacer(),
                 Text(
                   context.l10n.progressionXpEarned(report.xpEarned),
-                  style: text.titleMedium?.copyWith(
-                    color: colors.accentGreen,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AppTypography.numeric(colors.tertiary, size: 18),
                 ),
               ],
             ),
@@ -627,7 +626,11 @@ class _MatchPayout extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               Row(
                 children: <Widget>[
-                  Icon(Icons.auto_awesome, size: 18, color: colors.accentYellow),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 18,
+                    color: colors.accentYellow,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
                     context.l10n.progressionLevelUp(
@@ -635,8 +638,8 @@ class _MatchPayout extends StatelessWidget {
                       report.level.title,
                     ),
                     style: text.titleSmall?.copyWith(
-                      color: colors.ink,
-                      fontWeight: FontWeight.w800,
+                      color: colors.text,
+                      fontWeight: AppTypography.black,
                     ),
                   ),
                 ],
@@ -647,7 +650,7 @@ class _MatchPayout extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 context.l10n.progressionUnlocked.toUpperCase(),
-                style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                style: text.labelSmall?.copyWith(color: colors.textMuted),
               ),
               const SizedBox(height: AppSpacing.sm),
               for (final Achievement entry in report.unlocked)

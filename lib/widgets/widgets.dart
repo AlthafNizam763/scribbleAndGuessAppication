@@ -7,12 +7,12 @@
 /// ```
 library;
 
+export 'package:scribble_guess/core/widgets/app_button.dart';
+export 'package:scribble_guess/core/widgets/app_card.dart';
+export 'package:scribble_guess/core/widgets/app_controls.dart';
+export 'package:scribble_guess/core/widgets/app_dialogs.dart';
+export 'package:scribble_guess/core/widgets/app_scaffold.dart';
 export 'package:scribble_guess/core/widgets/brand_logo.dart';
-export 'package:scribble_guess/core/widgets/sketch_button.dart';
-export 'package:scribble_guess/core/widgets/sketch_card.dart';
-export 'package:scribble_guess/core/widgets/sketch_controls.dart';
-export 'package:scribble_guess/core/widgets/sketch_dialogs.dart';
-export 'package:scribble_guess/core/widgets/sketch_scaffold.dart';
 export 'package:scribble_guess/widgets/avatar_art.dart';
 export 'package:scribble_guess/widgets/avatar_painter.dart';
 export 'package:scribble_guess/widgets/chat_panel.dart';

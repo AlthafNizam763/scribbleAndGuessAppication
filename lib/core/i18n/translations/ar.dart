@@ -18,7 +18,7 @@
 /// framework: `GlobalWidgetsLocalizations` reports Arabic as RTL and every
 /// direction-aware widget mirrors itself. See the note in `app_text.dart`.
 const Map<String, String> arStrings = <String, String>{
-  'appTagline': 'ارسم. خمّن. اربح.',
+  'appTagline': 'اتخذوا قرارات غبية. معًا.',
 
   // --- Common actions ------------------------------------------------------
   'ok': 'حسنًا',
@@ -246,7 +246,7 @@ const Map<String, String> arStrings = <String, String>{
   // --- How to play ---------------------------------------------------------
   'howToPlayTitle': 'كيف تلعب',
   'howToPlayIntro':
-      'Scribble & Guess لعبة جماعية من لاعبَين إلى اثني عشر لاعبًا. في كل دور يرسم لاعب كلمة سرية بينما يتسابق الباقون لتخمينها.',
+      'STUPID GAMES لعبة جماعية من لاعبَين إلى اثني عشر لاعبًا. في كل دور يرسم لاعب كلمة سرية بينما يتسابق الباقون لتخمينها.',
   'howToPlayTurnsTitle': '١. بالتناوب',
   'howToPlayTurnsBody':
       'يرسم اللاعبون واحدًا تلو الآخر. تنتهي الجولة حين يرسم الجميع مرة واحدة، وتستمر المباراة للعدد الذي اختاره المضيف من الجولات.',
@@ -428,12 +428,12 @@ const Map<String, String> arStrings = <String, String>{
   'locationDetecting': 'جارٍ تحديد مدينتك…',
   'locationNoticeTitle': 'استخدام موقعك؟',
   'locationNoticeBody':
-      'يستطيع Scribble & Guess تعبئة اسم مدينتك نيابة عنك.\n\n• يحدد جهازك موقعك تقريبًا، ونحوّل ذلك إلى اسم مدينة على هاتفك نفسه.\n• لا يُحفظ سوى المدينة والمنطقة والدولة — ولا يُحفظ أبدًا موقعك الدقيق ولا عنوانك ولا أي سجل لأماكن كنت فيها.\n• يحدث ذلك مرة واحدة، حين تضغط الزر. ولا يعمل شيء في الخلفية.\n• يُستخدم للوحة الصدارة المحلية فقط. يرى اللاعبون الآخرون المدينة، ولا شيء أدق من ذلك.\n\nيمكنك الرفض وكتابة مدينتك بنفسك، أو تخطي الأمر كليًا.',
+      'يستطيع STUPID GAMES تعبئة اسم مدينتك نيابة عنك.\n\n• يحدد جهازك موقعك تقريبًا، ونحوّل ذلك إلى اسم مدينة على هاتفك نفسه.\n• لا يُحفظ سوى المدينة والمنطقة والدولة — ولا يُحفظ أبدًا موقعك الدقيق ولا عنوانك ولا أي سجل لأماكن كنت فيها.\n• يحدث ذلك مرة واحدة، حين تضغط الزر. ولا يعمل شيء في الخلفية.\n• يُستخدم للوحة الصدارة المحلية فقط. يرى اللاعبون الآخرون المدينة، ولا شيء أدق من ذلك.\n\nيمكنك الرفض وكتابة مدينتك بنفسك، أو تخطي الأمر كليًا.',
   'locationNoticeAllow': 'متابعة',
   'locationNoticeNotNow': 'ليس الآن',
   'locationSaved': 'تم الحفظ.',
   'locationDeniedHint': 'لا بأس — اكتب مدينتك في الأسفل بدلًا من ذلك.',
-  'locationBlockedTitle': 'الموقع معطّل لتطبيق Scribble & Guess',
+  'locationBlockedTitle': 'الموقع معطّل لتطبيق STUPID GAMES',
   'locationBlockedBody':
       'لن يسألك هاتفك مرة أخرى حتى تغيّر ذلك في إعدادات النظام. ويمكنك ببساطة كتابة مدينتك بدلًا من ذلك.',
   'locationOpenSettings': 'فتح الإعدادات',
@@ -633,7 +633,7 @@ const Map<String, String> arStrings = <String, String>{
   'progressionLevelUp': 'المستوى {level} — {title}',
   'friendRemoveBody':
       'لن تبقيا أنت و{name} صديقين. ويستطيع أي منكما إرسال طلب جديد لاحقًا.',
-  'inviteMessage': 'انضم إلى غرفتي في Scribble & Guess! الرمز: {code}',
+  'inviteMessage': 'انضم إلى غرفتي في STUPID GAMES! الرمز: {code}',
   'versionLabel': 'الإصدار {version}',
   'reconnectingIn': 'إعادة الاتصال خلال {seconds} ث',
 };

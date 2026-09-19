@@ -27,4 +27,5 @@ export 'package:scribble_guess/providers/settings_provider.dart';
 export 'package:scribble_guess/providers/sound_provider.dart';
 export 'package:scribble_guess/providers/stats_provider.dart';
 export 'package:scribble_guess/providers/tournaments_provider.dart';
+export 'package:scribble_guess/providers/user_preferences_provider.dart';
 export 'package:scribble_guess/providers/voice_chat_provider.dart';

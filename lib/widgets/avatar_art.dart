@@ -1,82 +1,41 @@
 import 'package:flutter/material.dart';
 
-/// The three families a player can pick a face from.
-enum AvatarKind {
-  /// People: hair, caps, glasses, beards.
-  human('People'),
-
-  /// Animals: cats, dogs, bears and friends.
-  animal('Animals'),
-
-  /// Anime: big eyes, bright hair.
-  anime('Anime');
-
-  const AvatarKind(this.label);
-
-  /// Title shown on the picker's category tab.
-  final String label;
-}
-
-/// The distinct drawings `AvatarArtPainter` knows how to make.
+/// The ten cats, as drawing instructions.
 ///
 /// Kept separate from the numeric id because the two mean different things: an
 /// id is persisted with the profile and broadcast to every other player, so it
 /// must never be reordered, while a shape is only ever a drawing instruction
 /// and is free to change with the art.
 enum AvatarShape {
-  /// Straight fringe, cut in a line across the brow.
-  bowlCut,
+  /// Eyes shut, one ear folded, snoring.
+  sleeping,
 
-  /// Side part gathered into a tail behind the right ear.
-  ponytail,
+  /// Squeezed-shut eyes and a wide open laugh. The house style.
+  laughing,
 
-  /// A halo of tight curls.
-  curls,
+  /// Flattened ears, slanted brows, a small furious frown.
+  angry,
 
-  /// Baseball cap, brim to the left.
-  ballCap,
+  /// One brow up, head tilted, mouth off to one side.
+  confused,
 
-  /// Top knot and round glasses.
-  topBun,
+  /// Enormous round eyes and a tiny O of a mouth.
+  shocked,
 
-  /// Full beard and moustache.
-  beard,
+  /// Eyes closed in bliss, head tilted, one paw raised mid-move.
+  dancing,
 
-  /// Pointed ears and whiskers.
-  cat,
+  /// Half-lidded eyes and a yawn.
+  lazy,
 
-  /// Floppy ears and a wide muzzle.
-  dog,
+  /// Narrowed eyes and a one-sided smirk.
+  smug,
 
-  /// Round ears and a pale snout.
-  bear,
+  /// Wide eyes, pinned-back ears, a wobbling frown.
+  scared,
 
-  /// Tall ears and cheek tufts.
-  fox,
-
-  /// Sooty ears and eye patches.
-  panda,
-
-  /// Long ears and two front teeth.
-  bunny,
-
-  /// Long hair with a spiked fringe.
-  animeLong,
-
-  /// Upswept spikes.
-  animeSpiky,
-
-  /// Two ribboned tails.
-  animeTwinTails,
-
-  /// Headband with trailing ribbons.
-  animeNinja,
-
-  /// Cat ears over a bob.
-  animeCatGirl,
-
-  /// Swept fringe and a closed-eye grin.
-  animeCool,
+  /// Mismatched eyes, a manic grin, fur sticking out.
+  chaotic,
 }
 
 /// The pigments characters are drawn with.
@@ -84,7 +43,7 @@ enum AvatarShape {
 /// Deliberately brightness independent, the same way `AppColors.drawingPalette`
 /// is: an avatar is a sticker stuck onto the page, and a sticker does not
 /// repaint itself at night. Only the disc behind it and its ring follow the
-/// theme, and that is what keeps the avatar reading as part of the sketchbook.
+/// theme, which is what keeps the avatar sitting in the page rather than on it.
 abstract final class AvatarPigments {
   /// Every outline on a character.
   static const Color line = Color(0xFF33302B);
@@ -98,49 +57,12 @@ abstract final class AvatarPigments {
   /// Noses, inner ears and tongues.
   static const Color petal = Color(0xFFE58B92);
 
-  // ----------------------------------------------------------------- skin ---
-
-  /// Palest skin.
-  static const Color skinPorcelain = Color(0xFFFBDFC4);
-
-  /// Warm mid skin.
-  static const Color skinWarm = Color(0xFFF1C79C);
-
-  /// Tan skin.
-  static const Color skinTan = Color(0xFFD29C6D);
-
-  /// Deep skin.
-  static const Color skinDeep = Color(0xFFA9714B);
-
-  // ----------------------------------------------------------------- hair ---
-
-  /// Near-black hair.
-  static const Color hairInk = Color(0xFF3C332C);
-
-  /// Warm brown hair.
-  static const Color hairChestnut = Color(0xFF87512E);
-
-  /// Blonde hair.
-  static const Color hairGold = Color(0xFFE9BC57);
-
-  /// Ginger hair.
-  static const Color hairRust = Color(0xFFC85E3A);
-
-  /// Anime blue.
-  static const Color hairSky = Color(0xFF5B8AC9);
-
-  /// Anime pink.
-  static const Color hairBubblegum = Color(0xFFEB8FB7);
-
-  /// Anime mint.
-  static const Color hairMint = Color(0xFF57BFAA);
-
-  /// Anime purple.
-  static const Color hairGrape = Color(0xFF9A7ACD);
+  /// The inside of an open mouth.
+  static const Color maw = Color(0xFF7E3B44);
 
   // ------------------------------------------------------------------ fur ---
 
-  /// Ginger coat.
+  /// Ginger coat — the brand cat's own.
   static const Color furGinger = Color(0xFFE9A055);
 
   /// Cocoa coat.
@@ -152,11 +74,27 @@ abstract final class AvatarPigments {
   /// Cream coat.
   static const Color furCream = Color(0xFFF7EBDB);
 
-  /// Sooty markings.
-  static const Color furSoot = Color(0xFF3E372F);
+  /// Sooty coat.
+  ///
+  /// Lifted well off the outline colour on purpose: a coat any darker
+  /// swallows the eyes and whiskers drawn on top of it, and the cat reads as a
+  /// silhouette rather than as a face.
+  static const Color furSoot = Color(0xFF8C8073);
 
-  /// Fox rust.
+  /// Rust coat.
   static const Color furRust = Color(0xFFDB7440);
+
+  /// Slate-blue coat.
+  static const Color furSlate = Color(0xFF8FA3B5);
+
+  /// Toffee coat.
+  static const Color furToffee = Color(0xFFD9B06A);
+
+  /// Mint coat, for the one that is clearly not a normal cat.
+  static const Color furMint = Color(0xFF8FC7AE);
+
+  /// Lilac coat.
+  static const Color furLilac = Color(0xFFB9A2CC);
 
   // ---------------------------------------------------------------- cloth ---
 
@@ -183,20 +121,24 @@ abstract final class AvatarPigments {
 
   /// Berry shoulders.
   static const Color clothBerry = Color(0xFFC0567F);
+
+  /// Mustard shoulders.
+  static const Color clothMustard = Color(0xFFD9A63C);
+
+  /// Ink shoulders.
+  static const Color clothInk = Color(0xFF445066);
 }
 
-/// One character in the catalogue: an id, the family it is filed under, the
-/// drawing to make, and the colours to make it in.
+/// One character in the catalogue: an id, the drawing to make, and the colours
+/// to make it in.
 @immutable
 class AvatarFace {
   /// Describes a character.
   const AvatarFace({
     required this.id,
-    required this.kind,
     required this.name,
     required this.shape,
-    required this.skin,
-    required this.hair,
+    required this.fur,
     required this.cloth,
     this.trim,
   });
@@ -204,213 +146,130 @@ class AvatarFace {
   /// Stable index, persisted as `avatarId`.
   final int id;
 
-  /// The family this face is filed under in the picker.
-  final AvatarKind kind;
-
-  /// Short name, spoken by screen readers.
+  /// Short name, spoken by screen readers and shown under the picker.
   final String name;
 
   /// Which drawing the painter makes.
   final AvatarShape shape;
 
-  /// Skin for people, coat for animals.
-  final Color skin;
-
-  /// Hair for people, ear lining or marking for animals.
-  final Color hair;
+  /// The coat.
+  final Color fur;
 
   /// The shoulders below the chin.
   final Color cloth;
 
-  /// One accent: a ribbon, a headband, a cap button.
+  /// One accent: a collar tag, a tuft, a bow.
   final Color? trim;
 }
 
 /// Every character the app can draw, in id order.
+///
+/// ## Ten cats, one family
+///
+/// This used to be eighteen faces across People, Animals and Anime, tabbed in
+/// the picker. STUPID GAMES has one cast, and it is cats — so the tabs are
+/// gone, the grid is one wrap of ten, and every character is a variation on
+/// the same animal wearing a different mood. A player scrolling this should
+/// recognise the app's logo in all ten.
+///
+/// ## What happened to everybody's old avatar
+///
+/// Nothing had to be migrated. [faceAt] has always folded an out-of-range id
+/// back into the catalogue, which is what let a client render an avatar from a
+/// newer build without throwing. That same fold is the migration: an account
+/// holding id 14 from the old eighteen now draws cat 4. Every existing player
+/// keeps a stable, deterministic face — a different one than before, which is
+/// the point of a rebrand — and no stored row was touched.
+///
+/// The server still *accepts* the old range so those rows stay saveable; it
+/// clamps new writes to ten. See `INPUT_LIMITS.legacyAvatarCount`.
 abstract final class AvatarCatalog {
-  /// The catalogue, grouped by family for the picker.
+  /// The catalogue.
   ///
   /// Entries may be appended, never reordered: an index is persisted with the
   /// profile and broadcast to every other player.
   static const List<AvatarFace> faces = <AvatarFace>[
-    // -------------------------------------------------------- people (0-5) ---
     AvatarFace(
       id: 0,
-      kind: AvatarKind.human,
-      name: 'Bowl cut',
-      shape: AvatarShape.bowlCut,
-      skin: AvatarPigments.skinPorcelain,
-      hair: AvatarPigments.hairInk,
-      cloth: AvatarPigments.clothCoral,
+      name: 'Sleepy',
+      shape: AvatarShape.sleeping,
+      fur: AvatarPigments.furAsh,
+      cloth: AvatarPigments.clothSlate,
     ),
     AvatarFace(
       id: 1,
-      kind: AvatarKind.human,
-      name: 'Ponytail',
-      shape: AvatarShape.ponytail,
-      skin: AvatarPigments.skinWarm,
-      hair: AvatarPigments.hairChestnut,
+      name: 'Giggles',
+      shape: AvatarShape.laughing,
+      fur: AvatarPigments.furGinger,
       cloth: AvatarPigments.clothTeal,
       trim: AvatarPigments.clothBerry,
     ),
     AvatarFace(
       id: 2,
-      kind: AvatarKind.human,
-      name: 'Curly hair',
-      shape: AvatarShape.curls,
-      skin: AvatarPigments.skinDeep,
-      hair: AvatarPigments.hairInk,
-      cloth: AvatarPigments.clothSand,
+      name: 'Grumpy',
+      shape: AvatarShape.angry,
+      fur: AvatarPigments.furSoot,
+      cloth: AvatarPigments.clothCoral,
     ),
     AvatarFace(
       id: 3,
-      kind: AvatarKind.human,
-      name: 'Baseball cap',
-      shape: AvatarShape.ballCap,
-      skin: AvatarPigments.skinTan,
-      hair: AvatarPigments.hairInk,
+      name: 'Puzzled',
+      shape: AvatarShape.confused,
+      fur: AvatarPigments.furToffee,
       cloth: AvatarPigments.clothOlive,
-      trim: AvatarPigments.clothDenim,
     ),
     AvatarFace(
       id: 4,
-      kind: AvatarKind.human,
-      name: 'Glasses',
-      shape: AvatarShape.topBun,
-      skin: AvatarPigments.skinPorcelain,
-      hair: AvatarPigments.hairGold,
+      name: 'Startled',
+      shape: AvatarShape.shocked,
+      fur: AvatarPigments.furCream,
       cloth: AvatarPigments.clothPlum,
     ),
     AvatarFace(
       id: 5,
-      kind: AvatarKind.human,
-      name: 'Beard',
-      shape: AvatarShape.beard,
-      skin: AvatarPigments.skinWarm,
-      hair: AvatarPigments.hairRust,
-      cloth: AvatarPigments.clothSlate,
+      name: 'Boogie',
+      shape: AvatarShape.dancing,
+      fur: AvatarPigments.furRust,
+      cloth: AvatarPigments.clothMustard,
+      trim: AvatarPigments.clothDenim,
     ),
-    // ------------------------------------------------------ animals (6-11) ---
     AvatarFace(
       id: 6,
-      kind: AvatarKind.animal,
-      name: 'Cat',
-      shape: AvatarShape.cat,
-      skin: AvatarPigments.furGinger,
-      hair: AvatarPigments.petal,
-      cloth: AvatarPigments.clothDenim,
+      name: 'Yawns',
+      shape: AvatarShape.lazy,
+      fur: AvatarPigments.furCocoa,
+      cloth: AvatarPigments.clothSand,
     ),
     AvatarFace(
       id: 7,
-      kind: AvatarKind.animal,
-      name: 'Dog',
-      shape: AvatarShape.dog,
-      skin: AvatarPigments.furCocoa,
-      hair: AvatarPigments.furCream,
-      cloth: AvatarPigments.clothCoral,
+      name: 'Smug',
+      shape: AvatarShape.smug,
+      fur: AvatarPigments.furSlate,
+      cloth: AvatarPigments.clothInk,
+      trim: AvatarPigments.clothMustard,
     ),
     AvatarFace(
       id: 8,
-      kind: AvatarKind.animal,
-      name: 'Bear',
-      shape: AvatarShape.bear,
-      skin: AvatarPigments.furCocoa,
-      hair: AvatarPigments.furCream,
-      cloth: AvatarPigments.clothTeal,
+      name: 'Nervous',
+      shape: AvatarShape.scared,
+      fur: AvatarPigments.furLilac,
+      cloth: AvatarPigments.clothDenim,
     ),
     AvatarFace(
       id: 9,
-      kind: AvatarKind.animal,
-      name: 'Fox',
-      shape: AvatarShape.fox,
-      skin: AvatarPigments.furRust,
-      hair: AvatarPigments.furCream,
-      cloth: AvatarPigments.clothOlive,
-    ),
-    AvatarFace(
-      id: 10,
-      kind: AvatarKind.animal,
-      name: 'Panda',
-      shape: AvatarShape.panda,
-      skin: AvatarPigments.furCream,
-      hair: AvatarPigments.furSoot,
-      cloth: AvatarPigments.clothPlum,
-    ),
-    AvatarFace(
-      id: 11,
-      kind: AvatarKind.animal,
-      name: 'Bunny',
-      shape: AvatarShape.bunny,
-      skin: AvatarPigments.furAsh,
-      hair: AvatarPigments.petal,
+      name: 'Chaos',
+      shape: AvatarShape.chaotic,
+      fur: AvatarPigments.furMint,
       cloth: AvatarPigments.clothBerry,
-    ),
-    // ------------------------------------------------------- anime (12-17) ---
-    AvatarFace(
-      id: 12,
-      kind: AvatarKind.anime,
-      name: 'Long hair',
-      shape: AvatarShape.animeLong,
-      skin: AvatarPigments.skinPorcelain,
-      hair: AvatarPigments.hairBubblegum,
-      cloth: AvatarPigments.clothSlate,
-    ),
-    AvatarFace(
-      id: 13,
-      kind: AvatarKind.anime,
-      name: 'Spiky hair',
-      shape: AvatarShape.animeSpiky,
-      skin: AvatarPigments.skinWarm,
-      hair: AvatarPigments.hairSky,
-      cloth: AvatarPigments.clothCoral,
-    ),
-    AvatarFace(
-      id: 14,
-      kind: AvatarKind.anime,
-      name: 'Twin tails',
-      shape: AvatarShape.animeTwinTails,
-      skin: AvatarPigments.skinPorcelain,
-      hair: AvatarPigments.hairGold,
-      cloth: AvatarPigments.clothTeal,
-      trim: AvatarPigments.clothBerry,
-    ),
-    AvatarFace(
-      id: 15,
-      kind: AvatarKind.anime,
-      name: 'Ninja',
-      shape: AvatarShape.animeNinja,
-      skin: AvatarPigments.skinTan,
-      hair: AvatarPigments.hairInk,
-      cloth: AvatarPigments.clothSlate,
       trim: AvatarPigments.clothCoral,
-    ),
-    AvatarFace(
-      id: 16,
-      kind: AvatarKind.anime,
-      name: 'Cat ears',
-      shape: AvatarShape.animeCatGirl,
-      skin: AvatarPigments.skinPorcelain,
-      hair: AvatarPigments.hairGrape,
-      cloth: AvatarPigments.clothDenim,
-      trim: AvatarPigments.petal,
-    ),
-    AvatarFace(
-      id: 17,
-      kind: AvatarKind.anime,
-      name: 'Big smile',
-      shape: AvatarShape.animeCool,
-      skin: AvatarPigments.skinDeep,
-      hair: AvatarPigments.hairMint,
-      cloth: AvatarPigments.clothSand,
     ),
   ];
 
-  /// The face for [id], wrapping so any int is drawable — an avatar from a
-  /// newer build, or a corrupt value off the wire, still draws a character
-  /// instead of throwing in the middle of a room.
+  /// The face for [id], wrapping so any int is drawable.
+  ///
+  /// The wrap is load-bearing twice over: an avatar id from a newer build, or
+  /// a corrupt value off the wire, still draws a character instead of throwing
+  /// in the middle of a room — and it is what silently carried every account
+  /// from the old eighteen-face catalogue onto a cat. See the class note.
   static AvatarFace faceAt(int id) => faces[id.abs() % faces.length];
-
-  /// Every face in [kind], in id order.
-  static List<AvatarFace> of(AvatarKind kind) =>
-      faces.where((AvatarFace face) => face.kind == kind).toList();
 }

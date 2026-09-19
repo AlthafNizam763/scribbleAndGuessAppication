@@ -158,6 +158,34 @@ class SocketRoomRepository implements RoomRepository {
   }
 
   @override
+  Future<Result<int>> addStupids(int count) async {
+    if (count < 1) {
+      return const Err<int>(
+        Failure(AppErrorCode.validation, 'Ask for at least one Stupid.'),
+      );
+    }
+
+    final Result<Map<String, dynamic>> ack = await _gateway.request(
+      SocketEvents.clientRoomAddStupids,
+      <String, dynamic>{'count': count},
+    );
+
+    // The count comes from the ack rather than from `count`, because the server
+    // clamps to the seats actually free — reporting what was asked for would
+    // tell the player four Stupids arrived when two did.
+    return ack.map((Map<String, dynamic> data) => asInt(data['seated']));
+  }
+
+  @override
+  Future<Result<int>> clearStupids() async {
+    final Result<Map<String, dynamic>> ack = await _gateway.request(
+      SocketEvents.clientRoomClearStupids,
+    );
+
+    return ack.map((Map<String, dynamic> data) => asInt(data['removed']));
+  }
+
+  @override
   Future<Result<void>> kickPlayer(String playerId) =>
       _playerAction(SocketEvents.clientRoomKick, playerId);
 

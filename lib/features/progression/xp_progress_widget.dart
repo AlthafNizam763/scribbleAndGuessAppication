@@ -4,11 +4,11 @@ import 'package:scribble_guess/theme/theme.dart';
 
 /// The level badge and XP bar.
 ///
-/// ## Drawn in the sketchbook language, not Material's
+/// ## Drawn in the design system, not Material's
 ///
-/// A flat fill inside a hard ink border, like every other container in the
-/// app — no elevation, no tonal surface, no gradient. The bar is a rectangle
-/// inside a rectangle, which is what a hand-drawn progress bar would be.
+/// A capsule of the tertiary aqua in a sunken track, and a level badge washed
+/// in the same colour — no elevation, no tonal surface, no gradient. Aqua
+/// because that is the colour the system reserves for anything earned.
 ///
 /// The number beside it is always the server's: this widget renders a
 /// [PlayerLevel] and computes nothing, which is what keeps it agreeing with
@@ -34,7 +34,7 @@ class XpProgressWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Column(
@@ -49,7 +49,7 @@ class XpProgressWidget extends StatelessWidget {
                 child: Text(
                   level.title,
                   style: text.titleSmall?.copyWith(
-                    color: colors.ink,
+                    color: colors.text,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -58,7 +58,7 @@ class XpProgressWidget extends StatelessWidget {
               const Spacer(),
             Text(
               level.progressLabel,
-              style: text.labelSmall?.copyWith(color: colors.inkSoft),
+              style: text.labelSmall?.copyWith(color: colors.textMuted),
             ),
           ],
         ),
@@ -74,7 +74,7 @@ class _LevelBadge extends StatelessWidget {
   const _LevelBadge({required this.level, required this.colors});
 
   final int level;
-  final SketchColors colors;
+  final AppPalette colors;
 
   @override
   Widget build(BuildContext context) {
@@ -83,18 +83,16 @@ class _LevelBadge extends StatelessWidget {
       height: 28,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: colors.accentYellow,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: colors.ink, width: AppSpacing.border),
+        color: colors.wash(colors.tertiary),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
+        border: Border.all(
+          color: colors.washBorder(colors.tertiary),
+          width: AppSpacing.hairline,
+        ),
       ),
       child: Text(
         '$level',
-        style: TextStyle(
-          color: colors.ink,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          height: 1.1,
-        ),
+        style: AppTypography.numeric(colors.tertiary, size: 13),
       ),
     );
   }
@@ -106,23 +104,20 @@ class _Bar extends StatelessWidget {
 
   final double fraction;
   final bool animate;
-  final SketchColors colors;
+  final AppPalette colors;
 
-  static const double _height = 12;
+  static const double _height = 10;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: _height,
       decoration: BoxDecoration(
-        color: colors.paper,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: colors.ink, width: AppSpacing.border),
+        color: colors.surfaceActive,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: ClipRRect(
-        // One pixel in from the border, so the fill sits inside the ink line
-        // rather than painting over it.
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSm - 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final double width = constraints.maxWidth * fraction.clamp(0, 1);
@@ -130,7 +125,7 @@ class _Bar extends StatelessWidget {
             if (!animate) {
               return Align(
                 alignment: Alignment.centerLeft,
-                child: Container(width: width, color: colors.accentGreen),
+                child: Container(width: width, color: colors.tertiary),
               );
             }
 
@@ -138,7 +133,7 @@ class _Bar extends StatelessWidget {
               duration: AppMotion.slow,
               curve: AppMotion.standard,
               width: width,
-              color: colors.accentGreen,
+              color: colors.tertiary,
             );
           },
         ),

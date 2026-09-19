@@ -37,7 +37,7 @@ class ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final String heading = title ?? titleFor(context.l10n, failure?.code);
     // The message arrives in English from `Failure`, which has no context to
@@ -46,32 +46,44 @@ class ErrorScreen extends StatelessWidget {
         ? context.l10n.errorUnknown
         : context.l10n.fromEnglish(failure!.message);
 
-    return SketchScaffold(
+    return AppScaffold(
       showBack: false,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(Icons.sentiment_dissatisfied, size: 64, color: colors.inkFaint),
-            const SizedBox(height: AppSpacing.lg),
+            Container(
+              height: 80,
+              width: 80,
+              decoration: BoxDecoration(
+                color: colors.wash(colors.danger),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              ),
+              child: Icon(
+                Icons.sentiment_dissatisfied_rounded,
+                size: 38,
+                color: colors.danger,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
             Text(
               heading,
               textAlign: TextAlign.center,
-              style: text.headlineSmall?.copyWith(color: colors.ink),
+              style: text.headlineMedium?.copyWith(color: colors.text),
             ),
             if (detail != heading) ...<Widget>[
               const SizedBox(height: AppSpacing.sm),
               Text(
                 detail,
                 textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+                style: text.bodyMedium?.copyWith(color: colors.textMuted),
               ),
             ],
             const SizedBox(height: AppSpacing.xl),
-            SketchButton(
+            AppButton(
               label: context.l10n.resultsBackHome,
-              icon: Icons.home_outlined,
-              variant: SketchButtonVariant.primary,
+              icon: Icons.home_rounded,
+              variant: AppButtonVariant.primary,
               onPressed: () => context.goNamed(AppRoutes.home),
             ),
           ],

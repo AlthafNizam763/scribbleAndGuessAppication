@@ -267,10 +267,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     _syncWordSheet(game, isDrawer);
 
     if (room == null) {
-      return const SketchScaffold(
+      return const AppScaffold(
         showBack: false,
         banner: ConnectionBanner(),
-        child: Center(child: CircularProgressIndicator()),
+        child: AppLoadingState(),
       );
     }
 
@@ -298,7 +298,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           _quit();
         }
       },
-      child: SketchScaffold(
+      child: AppScaffold(
         showBack: false,
         padded: false,
         constrained: false,
@@ -441,14 +441,14 @@ class _PausedCanvas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colors.canvasWhite,
+        color: colors.canvas,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: colors.ink, width: AppSpacing.border),
+        border: Border.all(color: colors.border, width: AppSpacing.hairline),
       ),
       child: Center(
         child: Padding(
@@ -456,18 +456,22 @@ class _PausedCanvas extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(Icons.hourglass_empty, size: 40, color: colors.inkSoft),
+              Icon(
+                Icons.hourglass_empty_rounded,
+                size: 36,
+                color: colors.primary,
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 context.l10n.gamePaused,
                 textAlign: TextAlign.center,
-                style: text.titleMedium?.copyWith(color: colors.ink),
+                style: text.titleMedium?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 context.l10n.gamePausedBody,
                 textAlign: TextAlign.center,
-                style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                style: text.bodySmall?.copyWith(color: colors.textMuted),
               ),
             ],
           ),
@@ -485,7 +489,7 @@ class _GameHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final GameState game = ref.watch(gameProvider);
@@ -519,26 +523,29 @@ class _GameHeader extends ConsumerWidget {
         AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: colors.paperDim,
+        color: colors.surface,
         border: Border(
-          bottom: BorderSide(color: colors.inkFaint, width: AppSpacing.border),
+          bottom: BorderSide(
+            color: colors.border,
+            width: AppSpacing.hairline,
+          ),
         ),
       ),
       child: Column(
         children: <Widget>[
           Row(
             children: <Widget>[
-              SketchBadge(
+              HudBadge(
                 label: 'R${game.currentRound}/${game.totalRounds}',
-                icon: Icons.repeat,
-                color: colors.accentBlue,
+                icon: Icons.repeat_rounded,
+                color: colors.primary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   caption,
                   overflow: TextOverflow.ellipsis,
-                  style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                  style: text.bodySmall?.copyWith(color: colors.textMuted),
                 ),
               ),
               // Voice sits with the other per-turn status in the header: a
@@ -631,7 +638,7 @@ class _WideLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final List<Player> players = ref.watch(playersProvider);
     final String selfId = ref.watch(selfIdProvider);
 
@@ -665,7 +672,10 @@ class _WideLayout extends ConsumerWidget {
           width: 320,
           decoration: BoxDecoration(
             border: Border(
-              left: BorderSide(color: colors.inkFaint, width: AppSpacing.border),
+              left: BorderSide(
+                color: colors.border,
+                width: AppSpacing.hairline,
+              ),
             ),
           ),
           child: Column(
@@ -684,7 +694,7 @@ class _WideLayout extends ConsumerWidget {
                   ],
                 ),
               ),
-              Divider(color: colors.inkFaint, height: AppSpacing.border),
+              Divider(color: colors.border, height: AppSpacing.hairline),
               Expanded(flex: 3, child: _ChatPane(onSend: onSend)),
             ],
           ),

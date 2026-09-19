@@ -11,6 +11,7 @@ export 'package:scribble_guess/repositories/chat_repository.dart';
 export 'package:scribble_guess/repositories/drawing_repository.dart';
 export 'package:scribble_guess/repositories/game_repository.dart';
 export 'package:scribble_guess/repositories/leaderboard_repository.dart';
+export 'package:scribble_guess/repositories/platform_game_repository.dart';
 export 'package:scribble_guess/repositories/profile_repository.dart';
 export 'package:scribble_guess/repositories/realtime_gateway.dart';
 export 'package:scribble_guess/repositories/room_repository.dart';

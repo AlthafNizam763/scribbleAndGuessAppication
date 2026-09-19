@@ -118,11 +118,11 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final RoomInvitation invitation = widget.invitation;
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -145,12 +145,12 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
                           ? '...'
                           : invitation.inviter.name,
                       overflow: TextOverflow.ellipsis,
-                      style: text.titleMedium?.copyWith(color: colors.ink),
+                      style: text.titleMedium?.copyWith(color: colors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       context.l10n.invitationTitle.toLowerCase(),
-                      style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
                     ),
                   ],
                 ),
@@ -179,7 +179,7 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: <Widget>[
-              SketchBadge(
+              HudBadge(
                 label: invitation.isPublic
                     ? context.l10n.invitationPublic
                     : context.l10n.invitationPrivate,
@@ -188,9 +188,9 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
                     : Icons.lock_outline,
                 color: invitation.isPublic
                     ? colors.accentGreen
-                    : colors.inkSoft,
+                    : colors.textMuted,
               ),
-              SketchBadge(
+              HudBadge(
                 label: invitation.roomStatus.label,
                 icon: Icons.meeting_room_outlined,
                 color: colors.accentBlue,
@@ -201,21 +201,21 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
           Row(
             children: <Widget>[
               Expanded(
-                child: SketchButton(
+                child: AppButton(
                   label: context.l10n.invitationReject,
                   icon: Icons.close,
                   expand: true,
-                  variant: SketchButtonVariant.secondary,
+                  variant: AppButtonVariant.secondary,
                   onPressed: _busy ? null : _reject,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: SketchButton(
+                child: AppButton(
                   label: context.l10n.invitationAccept,
                   icon: Icons.check,
                   expand: true,
-                  variant: SketchButtonVariant.primary,
+                  variant: AppButtonVariant.primary,
                   busy: _busy,
                   onPressed: _busy ? null : _accept,
                 ),
@@ -224,10 +224,10 @@ class _RoomInvitationCardState extends ConsumerState<RoomInvitationCard> {
           ),
           if (widget.showDismiss) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),
-            SketchButton(
+            AppButton(
               label: context.l10n.invitationLater,
               expand: true,
-              variant: SketchButtonVariant.ghost,
+              variant: AppButtonVariant.ghost,
               // Deliberately answers nothing. The invitation stays pending and
               // stays in the inbox, which is the right outcome for somebody
               // who was in the middle of something.
@@ -249,7 +249,7 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Column(
@@ -258,13 +258,13 @@ class _Fact extends StatelessWidget {
       children: <Widget>[
         Text(
           label.toUpperCase(),
-          style: text.labelSmall?.copyWith(color: colors.inkSoft),
+          style: text.labelSmall?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: 2),
         Text(
           value,
           overflow: TextOverflow.ellipsis,
-          style: text.titleSmall?.copyWith(color: colors.ink),
+          style: text.titleSmall?.copyWith(color: colors.text),
         ),
       ],
     );

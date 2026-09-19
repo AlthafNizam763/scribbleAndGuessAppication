@@ -108,6 +108,87 @@ mixin GeneratedText {
   /// See `AppStrings.homeChangeProfile`.
   String get homeChangeProfile => lookUp('homeChangeProfile');
 
+  /// See `AppStrings.loginTitle`.
+  String get loginTitle => lookUp('loginTitle');
+
+  /// See `AppStrings.loginSubtitle`.
+  String get loginSubtitle => lookUp('loginSubtitle');
+
+  /// See `AppStrings.authEmailLabel`.
+  String get authEmailLabel => lookUp('authEmailLabel');
+
+  /// See `AppStrings.authEmailHint`.
+  String get authEmailHint => lookUp('authEmailHint');
+
+  /// See `AppStrings.authPasswordLabel`.
+  String get authPasswordLabel => lookUp('authPasswordLabel');
+
+  /// See `AppStrings.authPasswordHint`.
+  String get authPasswordHint => lookUp('authPasswordHint');
+
+  /// See `AppStrings.authPasswordNewHint`.
+  String get authPasswordNewHint => lookUp('authPasswordNewHint');
+
+  /// See `AppStrings.loginAction`.
+  String get loginAction => lookUp('loginAction');
+
+  /// See `AppStrings.loginCreateAccount`.
+  String get loginCreateAccount => lookUp('loginCreateAccount');
+
+  /// See `AppStrings.loginAsGuest`.
+  String get loginAsGuest => lookUp('loginAsGuest');
+
+  /// See `AppStrings.loginGuestNote`.
+  String get loginGuestNote => lookUp('loginGuestNote');
+
+  /// See `AppStrings.registerTitle`.
+  String get registerTitle => lookUp('registerTitle');
+
+  /// See `AppStrings.registerSubtitle`.
+  String get registerSubtitle => lookUp('registerSubtitle');
+
+  /// See `AppStrings.registerUpgradeSubtitle`.
+  String get registerUpgradeSubtitle => lookUp('registerUpgradeSubtitle');
+
+  /// See `AppStrings.registerAction`.
+  String get registerAction => lookUp('registerAction');
+
+  /// See `AppStrings.registerHaveAccount`.
+  String get registerHaveAccount => lookUp('registerHaveAccount');
+
+  /// See `AppStrings.authEmailRequired`.
+  String get authEmailRequired => lookUp('authEmailRequired');
+
+  /// See `AppStrings.authEmailInvalid`.
+  String get authEmailInvalid => lookUp('authEmailInvalid');
+
+  /// See `AppStrings.authPasswordRequired`.
+  String get authPasswordRequired => lookUp('authPasswordRequired');
+
+  /// See `AppStrings.authPasswordTooShort`.
+  String get authPasswordTooShort => lookUp('authPasswordTooShort');
+
+  /// See `AppStrings.authUpgraded`.
+  String get authUpgraded => lookUp('authUpgraded');
+
+  /// See `AppStrings.authSignOut`.
+  String get authSignOut => lookUp('authSignOut');
+
+  /// See `AppStrings.settingsAccountSection`.
+  String get settingsAccountSection => lookUp('settingsAccountSection');
+
+  /// See `AppStrings.settingsAccountGuest`.
+  String get settingsAccountGuest => lookUp('settingsAccountGuest');
+
+  /// See `AppStrings.settingsAccountLinked`.
+  String get settingsAccountLinked => lookUp('settingsAccountLinked');
+
+  /// See `AppStrings.settingsSignOutBody`.
+  String get settingsSignOutBody => lookUp('settingsSignOutBody');
+
+  /// See `AppStrings.settingsSignOutGuestBody`.
+  String get settingsSignOutGuestBody => lookUp('settingsSignOutGuestBody');
+
   /// See `AppStrings.profileTitle`.
   String get profileTitle => lookUp('profileTitle');
 

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/models/social.dart';
 import 'package:scribble_guess/theme/theme.dart';
 import 'package:scribble_guess/widgets/player_avatar.dart';
 
 /// The pieces the leaderboard, friends and profile screens share.
 ///
-/// All of them are drawn from the existing sketchbook vocabulary — paper,
-/// ink outlines, the accent palette — and none introduces a new one. A
-/// leaderboard row is a [SketchCard] with a rank in front of it, not a new
-/// kind of surface, which is what keeps three new screens from looking like a
-/// different app bolted on.
+/// All of them are drawn from the one vocabulary — the surface step, the
+/// hairline, the accent palette — and none introduces a new one. A leaderboard
+/// row is an [AppCard] with a rank in front of it, not a new kind of surface,
+/// which is what keeps three screens from looking like a different app bolted
+/// on.
 
 /// A player's name, avatar and an optional line of detail.
 ///
@@ -53,16 +53,15 @@ class PlayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Semantics(
       button: onTap != null,
       label: subtitle == null ? card.name : '${card.name}, $subtitle',
-      child: SketchCard(
+      child: AppCard(
         onTap: onTap,
-        color: highlight ? colors.paperShade : colors.paperDim,
-        borderColor: highlight ? colors.ink : colors.inkFaint,
+        selected: highlight,
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: <Widget>[
@@ -81,14 +80,14 @@ class PlayerTile extends StatelessWidget {
                   Text(
                     card.name.isEmpty ? '...' : card.name,
                     overflow: TextOverflow.ellipsis,
-                    style: text.titleSmall?.copyWith(color: colors.ink),
+                    style: text.titleSmall?.copyWith(color: colors.text),
                   ),
                   if (subtitle != null) ...<Widget>[
                     const SizedBox(height: 2),
                     Text(
                       subtitle!,
                       overflow: TextOverflow.ellipsis,
-                      style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                      style: text.bodySmall?.copyWith(color: colors.textMuted),
                     ),
                   ],
                 ],
@@ -107,9 +106,10 @@ class PlayerTile extends StatelessWidget {
 
 /// The rank numeral in front of a leaderboard row.
 ///
-/// The top three get the accent palette and a small medal; everybody else gets
-/// ink. Deliberately restrained — a crown on first place is a wink, a podium
-/// rendered in gradients would be a different app.
+/// The top three get a washed disc in an accent and, for first, a trophy;
+/// everybody else gets a quiet numeral. Deliberately restrained — a cup on
+/// first place is a wink, a podium rendered in gradients would be a different
+/// app.
 class RankBadge extends StatelessWidget {
   /// Creates a rank badge.
   const RankBadge({required this.rank, super.key});
@@ -119,32 +119,39 @@ class RankBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
-    final TextTheme text = Theme.of(context).textTheme;
+    final AppPalette colors = context.palette;
 
     final Color tone = switch (rank) {
       1 => colors.accentYellow,
-      2 => colors.inkSoft,
+      2 => colors.textMuted,
       3 => colors.accentOrange,
-      _ => colors.inkFaint,
+      _ => colors.textFaint,
     };
 
-    return SizedBox(
-      width: 38,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (rank == 1)
-            Icon(Icons.emoji_events, size: 16, color: tone)
-          else if (rank <= 3)
-            Icon(Icons.workspace_premium_outlined, size: 14, color: tone),
-          Text(
-            // A rank the server could not compute shows a dash rather than 0.
-            rank > 0 ? '$rank' : '—',
-            style: text.titleMedium?.copyWith(color: tone),
-          ),
-        ],
+    final bool podium = rank >= 1 && rank <= 3;
+
+    return Container(
+      width: 34,
+      height: 34,
+      margin: const EdgeInsets.only(right: AppSpacing.sm),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: podium ? colors.wash(tone) : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
+        border: podium
+            ? Border.all(
+                color: colors.washBorder(tone),
+                width: AppSpacing.hairline,
+              )
+            : null,
       ),
+      child: rank == 1
+          ? Icon(Icons.emoji_events_rounded, size: 18, color: tone)
+          : Text(
+              // A rank the server could not compute shows a dash, not a zero.
+              rank > 0 ? '$rank' : '—',
+              style: AppTypography.numeric(tone, size: 15),
+            ),
     );
   }
 }
@@ -166,7 +173,7 @@ class RankChange extends StatelessWidget {
     final int? delta = change;
     if (delta == null || delta == 0) return const SizedBox.shrink();
 
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final bool up = delta > 0;
 
     return Row(
@@ -202,7 +209,7 @@ class StatCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Semantics(
@@ -211,10 +218,11 @@ class StatCell extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(value, style: text.titleSmall?.copyWith(color: colors.ink)),
+          Text(value, style: AppTypography.numeric(colors.text, size: 17)),
+          const SizedBox(height: 3),
           Text(
             label.toUpperCase(),
-            style: text.labelSmall?.copyWith(color: colors.inkSoft),
+            style: text.labelSmall?.copyWith(color: colors.textFaint),
           ),
         ],
       ),
@@ -232,12 +240,12 @@ class StatsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Column(
       children: <Widget>[
         const SizedBox(height: AppSpacing.sm),
-        Divider(color: colors.inkFaint, height: 1),
+        Divider(color: colors.border, height: 1),
         const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -283,7 +291,7 @@ class CountBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (count <= 0) return child;
 
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -299,16 +307,21 @@ class CountBadge extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 18),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: colors.paper,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                border: Border.all(color: colors.ink, width: AppSpacing.border),
+                color: colors.secondary,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                // Ringed in the page colour rather than the card's, so the
+                // badge reads as sitting on top of whatever it is pinned to.
+                border: Border.all(
+                  color: colors.bg,
+                  width: AppSpacing.borderThick,
+                ),
               ),
               child: Text(
                 count > 99 ? '99+' : '$count',
-                style: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: colors.ink),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white,
+                  letterSpacing: 0,
+                ),
               ),
             ),
           ),

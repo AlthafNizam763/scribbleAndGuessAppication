@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.scribbleguess" "\0"
-            VALUE "FileDescription", "Scribble & Guess" "\0"
+            VALUE "FileDescription", "STUPID GAMES" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "scribble_guess" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.scribbleguess. All rights reserved." "\0"
             VALUE "OriginalFilename", "scribble_guess.exe" "\0"
-            VALUE "ProductName", "Scribble & Guess" "\0"
+            VALUE "ProductName", "STUPID GAMES" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

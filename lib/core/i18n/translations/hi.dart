@@ -7,7 +7,7 @@
 /// Hindi's CLDR plural categories are `one` (which covers zero as well as one)
 /// and `other`; `{n}` is replaced with the count.
 const Map<String, String> hiStrings = <String, String>{
-  'appTagline': 'बनाओ. पहचानो. जीतो.',
+  'appTagline': 'बेवकूफ़ी भरे फैसले करो. साथ में.',
 
   // --- Common actions ------------------------------------------------------
   'ok': 'ठीक है',
@@ -419,12 +419,12 @@ const Map<String, String> hiStrings = <String, String>{
   'locationDetecting': 'आपका शहर खोजा जा रहा है…',
   'locationNoticeTitle': 'आपकी जगह इस्तेमाल करें?',
   'locationNoticeBody':
-      'Scribble & Guess आपका शहर अपने आप भर सकता है.\n\n• आपका डिवाइस मोटे तौर पर जगह पता करता है, और उसे आपके फ़ोन पर ही शहर के नाम में बदल देता है.\n• सिर्फ़ शहर, क्षेत्र और देश सहेजे जाते हैं — आपकी ठीक जगह, पता, या कहाँ-कहाँ गए इसका कोई रिकॉर्ड कभी नहीं.\n• यह सिर्फ़ एक बार होता है, जब आप बटन दबाते हैं. पृष्ठभूमि में कुछ नहीं चलता.\n• इसका इस्तेमाल सिर्फ़ स्थानीय लीडरबोर्ड के लिए होता है. बाकी खिलाड़ी शहर देखते हैं, उससे ज़्यादा कुछ नहीं.\n\nआप मना करके अपना शहर खुद लिख सकते हैं, या इसे पूरी तरह छोड़ सकते हैं.',
+      'STUPID GAMES आपका शहर अपने आप भर सकता है.\n\n• आपका डिवाइस मोटे तौर पर जगह पता करता है, और उसे आपके फ़ोन पर ही शहर के नाम में बदल देता है.\n• सिर्फ़ शहर, क्षेत्र और देश सहेजे जाते हैं — आपकी ठीक जगह, पता, या कहाँ-कहाँ गए इसका कोई रिकॉर्ड कभी नहीं.\n• यह सिर्फ़ एक बार होता है, जब आप बटन दबाते हैं. पृष्ठभूमि में कुछ नहीं चलता.\n• इसका इस्तेमाल सिर्फ़ स्थानीय लीडरबोर्ड के लिए होता है. बाकी खिलाड़ी शहर देखते हैं, उससे ज़्यादा कुछ नहीं.\n\nआप मना करके अपना शहर खुद लिख सकते हैं, या इसे पूरी तरह छोड़ सकते हैं.',
   'locationNoticeAllow': 'आगे बढ़ें',
   'locationNoticeNotNow': 'अभी नहीं',
   'locationSaved': 'सहेज लिया.',
   'locationDeniedHint': 'कोई बात नहीं — नीचे अपना शहर लिख दीजिए.',
-  'locationBlockedTitle': 'Scribble & Guess के लिए जगह बंद है',
+  'locationBlockedTitle': 'STUPID GAMES के लिए जगह बंद है',
   'locationBlockedBody':
       'जब तक आप सिस्टम सेटिंग्स में नहीं बदलते, फ़ोन दोबारा नहीं पूछेगा. आप अपना शहर खुद भी लिख सकते हैं.',
   'locationOpenSettings': 'सेटिंग्स खोलें',
@@ -589,7 +589,7 @@ const Map<String, String> hiStrings = <String, String>{
   'progressionLevelUp': 'स्तर {level} — {title}',
   'friendRemoveBody':
       'आप और {name} अब दोस्त नहीं रहेंगे. बाद में कोई भी नया अनुरोध भेज सकता है.',
-  'inviteMessage': 'मेरे Scribble & Guess रूम में आ जाओ! कोड: {code}',
+  'inviteMessage': 'मेरे STUPID GAMES रूम में आ जाओ! कोड: {code}',
   'versionLabel': 'संस्करण {version}',
   'reconnectingIn': '{seconds} सेकंड में फिर जुड़ेंगे',
 };

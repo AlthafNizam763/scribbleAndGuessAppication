@@ -45,15 +45,15 @@ class TournamentsScreen extends ConsumerWidget {
     final TournamentsNotifier notifier =
         ref.read(tournamentsProvider.notifier);
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.tournamentsTitle,
       padded: false,
       child: day.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stack) => SketchEmptyState(
+        loading: () => const AppLoadingState(),
+        error: (Object error, StackTrace stack) => AppEmptyState(
           message: error is Failure ? error.message : context.l10n.errorUnknown,
           icon: Icons.cloud_off_outlined,
-          action: SketchButton(
+          action: AppButton(
             label: context.l10n.retry,
             onPressed: notifier.refresh,
           ),
@@ -75,7 +75,7 @@ class _DayList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return ListView(
@@ -86,7 +86,7 @@ class _DayList extends StatelessWidget {
       children: <Widget>[
         Text(
           context.l10n.tournamentAutoSubtitle,
-          style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+          style: text.bodyMedium?.copyWith(color: colors.textMuted),
         ),
         const SizedBox(height: AppSpacing.lg),
 
@@ -100,13 +100,13 @@ class _DayList extends StatelessWidget {
                 Text(
                   context.l10n.tournamentNoneToday,
                   textAlign: TextAlign.center,
-                  style: text.titleMedium?.copyWith(color: colors.ink),
+                  style: text.titleMedium?.copyWith(color: colors.text),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   context.l10n.tournamentNoneTodayHint,
                   textAlign: TextAlign.center,
-                  style: text.bodySmall?.copyWith(color: colors.inkFaint),
+                  style: text.bodySmall?.copyWith(color: colors.textFaint),
                 ),
               ],
             ),
@@ -172,11 +172,11 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AutoTournament tournament = _tournament;
 
-    return SketchCard(
+    return AppCard(
       onTap: _open,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +190,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
                   children: <Widget>[
                     Text(
                       tournament.name,
-                      style: text.titleMedium?.copyWith(color: colors.ink),
+                      style: text.titleMedium?.copyWith(color: colors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -198,7 +198,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
                       '  ·  ${TimeUtils.formatClock(tournament.startAtMs)}'
                       '  ·  ${context.l10n.tournamentFormatKnockout}'
                       '  ·  ${context.l10n.tournamentFreeEntry}',
-                      style: text.bodySmall?.copyWith(color: colors.inkFaint),
+                      style: text.bodySmall?.copyWith(color: colors.textFaint),
                     ),
                   ],
                 ),
@@ -248,7 +248,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
 
   /// The body of a card for a tournament that has not finished.
   List<Widget> _live(BuildContext context, AutoTournament tournament) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return <Widget>[
@@ -261,7 +261,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
         Text(
           '${context.l10n.tournamentRound} '
           '${tournament.currentRound} / ${tournament.totalRounds}',
-          style: text.bodySmall?.copyWith(color: colors.inkSoft),
+          style: text.bodySmall?.copyWith(color: colors.textMuted),
         ),
       ],
 
@@ -304,7 +304,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
 
   /// The body of a finished tournament's card: who won it.
   List<Widget> _completed(BuildContext context, AutoTournament tournament) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final TournamentParticipant? winner = tournament.winner;
 
@@ -313,7 +313,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
         const SizedBox(height: AppSpacing.md),
         Text(
           context.l10n.tournamentFinished,
-          style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+          style: text.bodyMedium?.copyWith(color: colors.textMuted),
         ),
       ];
     }
@@ -322,7 +322,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
       const SizedBox(height: AppSpacing.md),
       Text(
         context.l10n.tournamentWinner,
-        style: text.bodySmall?.copyWith(color: colors.inkFaint),
+        style: text.bodySmall?.copyWith(color: colors.textFaint),
       ),
       // The same row the bracket and the results table draw. It already knows
       // to give an AI a robot glyph rather than a player avatar, which is the
@@ -337,14 +337,14 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
 
   /// The body of a cancelled tournament's card.
   List<Widget> _cancelled(BuildContext context, AutoTournament tournament) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return <Widget>[
       const SizedBox(height: AppSpacing.md),
       Text(
         tournament.cancelReason ?? context.l10n.tournamentCancelled,
-        style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+        style: text.bodyMedium?.copyWith(color: colors.textMuted),
       ),
       const SizedBox(height: AppSpacing.xs),
       // The replacement is simply the next card on the screen. Nothing is
@@ -352,7 +352,7 @@ class _TournamentCardState extends ConsumerState<_TournamentCard> {
       // look rather than promising something that is coming.
       Text(
         context.l10n.tournamentCancelledHint,
-        style: text.bodySmall?.copyWith(color: colors.inkFaint),
+        style: text.bodySmall?.copyWith(color: colors.textFaint),
       ),
     ];
   }
@@ -399,7 +399,7 @@ class _CardActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final ViewerTournamentState viewer = tournament.viewer;
 
@@ -408,9 +408,9 @@ class _CardActions extends StatelessWidget {
     // only condition under which an "enter match" button exists at all — a
     // player with no assigned match is never shown one.
     if (viewer.activeMatch != null) {
-      return SketchButton(
+      return AppButton(
         label: context.l10n.tournamentEnterMatch,
-        variant: SketchButtonVariant.primary,
+        variant: AppButtonVariant.primary,
         icon: Icons.play_arrow_rounded,
         expand: true,
         onPressed: onOpen,
@@ -428,9 +428,9 @@ class _CardActions extends StatelessWidget {
       return Row(
         children: <Widget>[
           Expanded(
-            child: SketchButton(
+            child: AppButton(
               label: context.l10n.tournamentViewResult,
-              variant: SketchButtonVariant.secondary,
+              variant: AppButtonVariant.secondary,
               expand: true,
               onPressed: onOpen,
             ),
@@ -448,9 +448,9 @@ class _CardActions extends StatelessWidget {
       children: <Widget>[
         if (viewer.canCheckIn)
           Expanded(
-            child: SketchButton(
+            child: AppButton(
               label: context.l10n.tournamentCheckIn,
-              variant: SketchButtonVariant.primary,
+              variant: AppButtonVariant.primary,
               busy: busy,
               expand: true,
               onPressed: onCheckIn,
@@ -458,9 +458,9 @@ class _CardActions extends StatelessWidget {
           )
         else if (viewer.canRegister)
           Expanded(
-            child: SketchButton(
+            child: AppButton(
               label: context.l10n.tournamentJoin,
-              variant: SketchButtonVariant.primary,
+              variant: AppButtonVariant.primary,
               busy: busy,
               expand: true,
               onPressed: onJoin,
@@ -477,7 +477,7 @@ class _CardActions extends StatelessWidget {
                     viewer.isCheckedIn
                         ? context.l10n.tournamentCheckedInShort
                         : context.l10n.tournamentRegisteredShort,
-                    style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+                    style: text.bodyMedium?.copyWith(color: colors.textMuted),
                   ),
                 ),
                 // Only where the server says it is still allowed — which is

@@ -70,11 +70,72 @@ enum SoundEffect {
   tick('tick', Haptic.none),
 
   /// The clock ran out with the word unguessed.
-  timeUp('time_up', Haptic.heavy);
+  timeUp('time_up', Haptic.heavy),
 
-  const SoundEffect(this._file, this.haptic);
+  // ------------------------------------------------------------- Kazhutha --
+
+  kazhuthaDraw('card_draw', Haptic.light, 'kazhutha/audio'),
+  kazhuthaPlace('card_place', Haptic.light, 'kazhutha/audio'),
+  kazhuthaShuffle('card_shuffle', Haptic.none, 'kazhutha/audio'),
+  kazhuthaTurn('turn_change', Haptic.medium, 'kazhutha/audio'),
+  kazhuthaPair('pair_made', Haptic.light, 'kazhutha/audio'),
+  kazhuthaDonkey('donkey_reveal', Haptic.heavy, 'kazhutha/audio'),
+  kazhuthaWin('win', Haptic.medium, 'kazhutha/audio'),
+  kazhuthaLose('lose', Haptic.heavy, 'kazhutha/audio'),
+  kazhuthaClick('click', Haptic.selection, 'kazhutha/audio'),
+
+  // ------------------------------------------------------------ Bluff Bar --
+
+  bluffDeal('deal', Haptic.light, 'bluff_bar/audio'),
+  bluffAmbience('ambience', Haptic.none, 'bluff_bar/audio'),
+  bluffCall('bluff_call', Haptic.medium, 'bluff_bar/audio'),
+  bluffReveal('reveal', Haptic.light, 'bluff_bar/audio'),
+  bluffTension('tension', Haptic.none, 'bluff_bar/audio'),
+  bluffElimination('elimination', Haptic.heavy, 'bluff_bar/audio'),
+  bluffWin('win', Haptic.medium, 'bluff_bar/audio'),
+  bluffLose('lose', Haptic.heavy, 'bluff_bar/audio'),
+  bluffClick('click', Haptic.selection, 'bluff_bar/audio'),
+
+  // -------------------------------------------------------- Space Mystery --
+
+  spaceAmbience('ambience', Haptic.none, 'space_mystery/audio'),
+  spaceTaskDone('task_complete', Haptic.light, 'space_mystery/audio'),
+  spaceEmergency('emergency', Haptic.heavy, 'space_mystery/audio'),
+  spaceMeeting('meeting', Haptic.medium, 'space_mystery/audio'),
+  spaceVote('voting', Haptic.selection, 'space_mystery/audio'),
+  spaceCountdown('countdown', Haptic.none, 'space_mystery/audio'),
+  spaceElimination('elimination', Haptic.heavy, 'space_mystery/audio'),
+  spaceSabotage('sabotage', Haptic.heavy, 'space_mystery/audio'),
+  spaceSuccess('success', Haptic.medium, 'space_mystery/audio'),
+  spaceFailure('failure', Haptic.heavy, 'space_mystery/audio'),
+  spaceClick('click', Haptic.selection, 'space_mystery/audio'),
+
+  // ------------------------------------------------------------------ Ludo --
+
+  ludoDice('dice_roll', Haptic.medium, 'ludo/audio'),
+  ludoMove('token_move', Haptic.light, 'ludo/audio'),
+  ludoCapture('token_capture', Haptic.heavy, 'ludo/audio'),
+  ludoSafe('safe_tile', Haptic.light, 'ludo/audio'),
+  ludoHome('home', Haptic.medium, 'ludo/audio'),
+  ludoVictory('victory', Haptic.heavy, 'ludo/audio'),
+  ludoTurn('turn_change', Haptic.medium, 'ludo/audio'),
+  ludoClick('click', Haptic.selection, 'ludo/audio');
+
+  const SoundEffect(this._file, this.haptic, [this._folder = 'sounds']);
 
   final String _file;
+
+  /// Which folder under `assets/` this one lives in.
+  ///
+  /// The shared set is in `sounds`; each game's own voice is in its own
+  /// folder, so a card table and a spaceship can both have a `click` without
+  /// one overwriting the other.
+  final String _folder;
+
+  String get folder => _folder;
+
+  /// Whether this belongs to the set every screen can play.
+  bool get isShared => _folder == 'sounds';
 
   /// The vibration that accompanies this sound.
   final Haptic haptic;
@@ -82,7 +143,7 @@ enum SoundEffect {
   /// Path of the backing file, relative to the `assets/` root.
   ///
   /// `AssetSource` prepends `assets/` itself, which is why this does not.
-  String get asset => 'sounds/$_file.wav';
+  String get asset => '$_folder/$_file.wav';
 }
 
 /// Plays the game's sound effects and fires its haptics.
@@ -139,6 +200,32 @@ class SoundService {
   /// one place the delay would be noticeable.
   Future<void> warmUp() => _warmUp ??= _prepare();
 
+  /// Extracts one game's own sounds, once.
+  ///
+  /// Called when a game screen opens. Idempotent and cheap to call again: a
+  /// folder already unpacked returns the same completed future, so a rematch
+  /// does not re-extract anything.
+  ///
+  /// Failures are swallowed for the same reason every other failure here is —
+  /// a game with no sound is a game, and a game that would not start because
+  /// a speaker was unavailable is not.
+  Future<void> warmUpGame(String folder) {
+    return _warmedFolders[folder] ??= () async {
+      try {
+        await warmUp();
+        await AudioCache.instance.loadAll(<String>[
+          for (final SoundEffect effect in SoundEffect.values)
+            if (effect.folder == folder) effect.asset,
+        ]);
+      } catch (error, stack) {
+        AppLogger.w('Game sounds unavailable; continuing muted', error, stack);
+      }
+    }();
+  }
+
+  /// One future per folder already unpacked.
+  final Map<String, Future<void>> _warmedFolders = <String, Future<void>>{};
+
   Future<void> _prepare() async {
     try {
       // Sonification, not media, and no audio focus: these are blips over the
@@ -166,9 +253,15 @@ class SoundService {
 
       // Extracts every asset to a cache file up front. Without this the first
       // play of each effect pays for a bundle read on the platform thread.
+      // Only the shared set. A game's own folder is extracted when that game
+      // opens — see [warmUpGame] — because a player who only ever opens
+      // Scribble & Guess should not pay to unpack a spaceship's alarm, and
+      // extracting all fifty up front is close to a megabyte of work on the
+      // platform thread before the first screen has drawn.
       await AudioCache.instance.loadAll(
         <String>[
-          for (final SoundEffect effect in SoundEffect.values) effect.asset,
+          for (final SoundEffect effect in SoundEffect.values)
+            if (effect.isShared) effect.asset,
         ],
       );
 

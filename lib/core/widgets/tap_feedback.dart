@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 /// ## Why this exists rather than a `ref.read` in the button
 ///
 /// `core/` is the app's base layer and imports nothing from `providers/`;
-/// that is what lets the sketch UI kit be dropped into a test, or a widget
+/// that is what lets the widget kit be dropped into a test, or a widget
 /// catalogue, with no Riverpod scope around it. But a button is exactly where a
 /// click and a bump belong, and the thing that plays them is a service that
 /// lives in a provider.

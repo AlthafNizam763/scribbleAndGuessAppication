@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Scribble & Guess (dev, real Firebase)",
+      "name": "STUPID GAMES (dev, real Firebase)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "name": "Scribble & Guess (dev, emulators — Android emulator only)",
+      "name": "STUPID GAMES (dev, emulators — Android emulator only)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "name": "Scribble & Guess (dev, emulators over LAN — physical device)",
+      "name": "STUPID GAMES (dev, emulators over LAN — physical device)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "name": "Scribble & Guess (production)",
+      "name": "STUPID GAMES (production)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",

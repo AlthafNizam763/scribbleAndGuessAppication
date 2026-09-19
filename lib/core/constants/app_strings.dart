@@ -7,11 +7,12 @@ abstract final class AppStrings {
   // Common
   // ---------------------------------------------------------------------------
 
-  /// Product name shown in the app bar and on the splash screen.
-  static const String appName = 'Scribble & Guess';
+  /// The platform's name. Not a game's — the individual games keep their own
+  /// names, and `GameCatalog` is where those live.
+  static const String appName = 'STUPID GAMES';
 
   /// One-line pitch shown under the logo.
-  static const String appTagline = 'Draw it. Guess it. Win it.';
+  static const String appTagline = 'Make stupid decisions. Together.';
 
   /// Generic confirmation action.
   static const String ok = 'OK';
@@ -80,8 +81,8 @@ abstract final class AppStrings {
   // Home
   // ---------------------------------------------------------------------------
 
-  /// Title of the home screen.
-  static const String homeTitle = 'Scribble & Guess';
+  /// Title of the home screen: the platform, not any one game.
+  static const String homeTitle = 'STUPID GAMES';
 
   /// Button that opens the create-room flow.
   static const String homeCreateRoom = 'Create room';
@@ -106,6 +107,100 @@ abstract final class AppStrings {
 
   /// Action that opens the profile editor from the home screen.
   static const String homeChangeProfile = 'Change';
+
+  // ---------------------------------------------------------------------------
+  // Account
+  // ---------------------------------------------------------------------------
+
+  /// Title of the sign-in screen.
+  static const String loginTitle = 'Welcome back';
+
+  /// Subtitle of the sign-in screen.
+  static const String loginSubtitle = 'Sign in to play with your crew.';
+
+  /// Label of the email field.
+  static const String authEmailLabel = 'Email';
+
+  /// Hint of the email field.
+  static const String authEmailHint = 'you@example.com';
+
+  /// Label of the password field.
+  static const String authPasswordLabel = 'Password';
+
+  /// Hint of the password field on the sign-in screen.
+  static const String authPasswordHint = 'Your password';
+
+  /// Hint of the password field on the registration screen.
+  static const String authPasswordNewHint = 'At least 8 characters';
+
+  /// Primary action of the sign-in screen.
+  static const String loginAction = 'Sign in';
+
+  /// Action that opens the registration screen from sign-in.
+  static const String loginCreateAccount = 'Create an account';
+
+  /// Action that starts a session with no credentials.
+  static const String loginAsGuest = 'Continue as guest';
+
+  /// Explains what playing as a guest costs.
+  static const String loginGuestNote =
+      'You can sign up later and keep your progress.';
+
+  /// Title of the registration screen.
+  static const String registerTitle = 'Create your account';
+
+  /// Subtitle of the registration screen.
+  static const String registerSubtitle = 'Keep your score on every device.';
+
+  /// Subtitle shown when a guest is upgrading rather than starting fresh.
+  static const String registerUpgradeSubtitle =
+      'Your games, friends and score all come with you.';
+
+  /// Primary action of the registration screen.
+  static const String registerAction = 'Create account';
+
+  /// Action that returns to the sign-in screen.
+  static const String registerHaveAccount = 'I already have an account';
+
+  /// Shown when an email field is empty.
+  static const String authEmailRequired = 'Enter your email address.';
+
+  /// Shown when an email field does not look like an address.
+  static const String authEmailInvalid = 'That does not look like an email address.';
+
+  /// Shown when a password field is empty.
+  static const String authPasswordRequired = 'Enter your password.';
+
+  /// Shown when a new password is too short.
+  static const String authPasswordTooShort = 'Use at least 8 characters.';
+
+  /// Confirmation shown after a guest upgrades their account.
+  static const String authUpgraded = 'Account created. Your progress is saved.';
+
+  /// Action that ends the session on this device.
+  static const String authSignOut = 'Sign out';
+
+  /// Heading of the account section in settings.
+  static const String settingsAccountSection = 'Account';
+
+  /// Shown under the player's name when they have no credentials.
+  static const String settingsAccountGuest = 'Playing as a guest';
+
+  /// Shown under the player's name when they have signed up.
+  static const String settingsAccountLinked = 'Signed in with email';
+
+  /// Confirmation body when signing out of an account.
+  static const String settingsSignOutBody =
+      'You can sign back in any time with your email and password.';
+
+  /// Confirmation body when signing out of a guest session.
+  ///
+  /// Blunter than the one above on purpose: a guest has no credentials, so
+  /// there is nothing to sign back in *with*, and this is the last moment
+  /// anyone can tell them so.
+  static const String settingsSignOutGuestBody =
+      'This guest account has no password, so you will not be able to sign '
+      'back in. Create an account first to keep your progress.';
 
   // ---------------------------------------------------------------------------
   // Profile
@@ -1041,7 +1136,7 @@ abstract final class AppStrings {
 
   /// Invite text shared from the lobby.
   static String inviteMessage(String code) =>
-      'Join my Scribble & Guess room! Code: $code';
+      'Join my STUPID GAMES room! Code: $code';
 
   /// Version row value, such as `Version 1.0.0`.
   static String versionLabel(String version) => 'Version $version';
@@ -1278,7 +1373,7 @@ abstract final class AppStrings {
   /// kept, what is not kept, and that saying no costs nothing. Every claim in
   /// it is one the code actually enforces — see `LocationService`.
   static const String locationNoticeBody =
-      'Scribble & Guess can fill in your town for you.\n\n'
+      'STUPID GAMES can fill in your town for you.\n\n'
       '• Your device works out roughly where you are, and we turn that into '
       'a town name on your phone.\n'
       '• Only the town, region and country are saved — never your exact '
@@ -1304,7 +1399,7 @@ abstract final class AppStrings {
 
   /// Title of the prompt shown after a permanent denial.
   static const String locationBlockedTitle = 'Location is turned off for '
-      'Scribble & Guess';
+      'STUPID GAMES';
 
   /// Body of that prompt.
   static const String locationBlockedBody =

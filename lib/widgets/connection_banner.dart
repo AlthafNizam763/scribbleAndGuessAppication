@@ -20,7 +20,7 @@ class ConnectionBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ConnectionStatus status = ref.watch(connectionProvider);
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final (String message, Color tint, bool spinner) = switch (status) {
@@ -53,10 +53,18 @@ class ConnectionBanner extends ConsumerWidget {
       liveRegion: true,
       child: Container(
         width: double.infinity,
-        color: tint.withValues(alpha: 0.16),
+        decoration: BoxDecoration(
+          color: colors.wash(tint),
+          border: Border(
+            bottom: BorderSide(
+              color: colors.washBorder(tint),
+              width: AppSpacing.hairline,
+            ),
+          ),
+        ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
+          vertical: AppSpacing.sm + 2,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -76,7 +84,7 @@ class ConnectionBanner extends ConsumerWidget {
               child: Text(
                 message,
                 textAlign: TextAlign.center,
-                style: text.labelMedium?.copyWith(color: colors.ink),
+                style: text.labelMedium?.copyWith(color: tint),
               ),
             ),
           ],

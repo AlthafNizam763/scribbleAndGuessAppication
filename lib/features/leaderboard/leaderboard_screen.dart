@@ -50,9 +50,9 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.leaderboardTitle,
       padded: false,
       constrained: false,
@@ -60,24 +60,21 @@ class _LeaderboardScreenState extends ConsumerState<LeaderboardScreen>
         // The on-device history predates the server boards and still records
         // every finished match. It is kept reachable here rather than deleted:
         // it is the only board that works offline and without an account.
-        IconButton(
-          icon: const Icon(Icons.history),
+        AppIconButton(
+          icon: Icons.history_rounded,
           tooltip: context.l10n.leaderboardLocalHistory,
           onPressed: () => showModalBottomSheet<void>(
             context: context,
             isScrollControlled: true,
-            backgroundColor: colors.paper,
+            backgroundColor: colors.surface,
             builder: (BuildContext sheetContext) => const _LocalHistorySheet(),
           ),
         ),
       ],
       child: Column(
         children: <Widget>[
-          TabBar(
+          AppSegmentedTabs(
             controller: _tabs,
-            labelColor: colors.ink,
-            unselectedLabelColor: colors.inkSoft,
-            indicatorColor: colors.ink,
             tabs: <Widget>[
               for (final LeaderboardScope scope in LeaderboardScope.values)
                 Tab(text: scope.label),
@@ -152,13 +149,13 @@ class _BoardState extends ConsumerState<_Board>
         ref.watch(rankingProvider(widget.scope));
 
     return board.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (Object error, StackTrace stack) => SketchEmptyState(
+      loading: () => const AppLoadingState(),
+      error: (Object error, StackTrace stack) => AppEmptyState(
         // The server writes messages for players, so its own wording is used
         // rather than a generic one whenever there is one.
         message: error is Failure ? error.message : context.l10n.errorUnknown,
         icon: Icons.cloud_off_outlined,
-        action: SketchButton(
+        action: AppButton(
           label: context.l10n.retry,
           onPressed: () =>
               ref.read(rankingProvider(widget.scope).notifier).refresh(),
@@ -181,7 +178,7 @@ class _BoardState extends ConsumerState<_Board>
           physics: const AlwaysScrollableScrollPhysics(),
           children: <Widget>[
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-            SketchEmptyState(
+            AppEmptyState(
               message: switch (widget.scope) {
                 LeaderboardScope.friends => context.l10n.leaderboardFriendsEmpty,
                 LeaderboardScope.locality =>
@@ -190,7 +187,7 @@ class _BoardState extends ConsumerState<_Board>
               },
               icon: Icons.emoji_events_outlined,
               action: widget.scope == LeaderboardScope.friends
-                  ? SketchButton(
+                  ? AppButton(
                       label: context.l10n.friendsTitle,
                       icon: Icons.group_outlined,
                       onPressed: () =>
@@ -224,7 +221,7 @@ class _BoardState extends ConsumerState<_Board>
                 if (index >= page.items.length) {
                   return const Padding(
                     padding: EdgeInsets.all(AppSpacing.lg),
-                    child: Center(child: CircularProgressIndicator()),
+                    child: AppLoadingState(),
                   );
                 }
                 return _Row(row: page.items[index], scope: widget.scope);
@@ -247,7 +244,7 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     // The locality board is the only one where a row's town is worth showing:
@@ -279,7 +276,7 @@ class _Row extends StatelessWidget {
               children: <Widget>[
                 Text(
                   '${row.stats.totalScore}',
-                  style: text.titleMedium?.copyWith(color: colors.ink),
+                  style: text.titleMedium?.copyWith(color: colors.text),
                 ),
                 RankChange(change: row.rankChange),
               ],
@@ -306,7 +303,7 @@ class _SelfFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     final RankedPlayer? self = page.currentUserEntry;
@@ -319,13 +316,13 @@ class _SelfFooter extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: colors.paperDim,
-          border: Border(top: BorderSide(color: colors.inkFaint)),
+          color: colors.surfaceSunken,
+          border: Border(top: BorderSide(color: colors.textFaint)),
         ),
         child: Text(
           context.l10n.leaderboardUnranked,
           textAlign: TextAlign.center,
-          style: text.bodySmall?.copyWith(color: colors.inkSoft),
+          style: text.bodySmall?.copyWith(color: colors.textMuted),
         ),
       );
     }
@@ -343,8 +340,8 @@ class _SelfFooter extends StatelessWidget {
         AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: colors.paper,
-        border: Border(top: BorderSide(color: colors.inkFaint)),
+        color: colors.surface,
+        border: Border(top: BorderSide(color: colors.textFaint)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,7 +354,7 @@ class _SelfFooter extends StatelessWidget {
             ),
             child: Text(
               context.l10n.leaderboardYourRank.toUpperCase(),
-              style: text.labelSmall?.copyWith(color: colors.inkSoft),
+              style: text.labelSmall?.copyWith(color: colors.textMuted),
             ),
           ),
           PlayerTile(
@@ -366,7 +363,7 @@ class _SelfFooter extends StatelessWidget {
             leading: RankBadge(rank: self.rank),
             trailing: Text(
               '${self.stats.totalScore}',
-              style: text.titleMedium?.copyWith(color: colors.ink),
+              style: text.titleMedium?.copyWith(color: colors.text),
             ),
           ),
         ],
@@ -381,13 +378,13 @@ class _LocalityPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SketchEmptyState(
+    return AppEmptyState(
       message: context.l10n.leaderboardNeedsLocality,
       icon: Icons.location_city_outlined,
-      action: SketchButton(
+      action: AppButton(
         label: context.l10n.leaderboardSetLocality,
         icon: Icons.edit_location_alt_outlined,
-        onPressed: () => context.pushNamed(AppRoutes.profile),
+        onPressed: () => context.pushNamed(AppRoutes.editProfile),
       ),
     );
   }
@@ -418,7 +415,7 @@ class _LocalHistorySheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final AsyncValue<List<LeaderboardEntry>> entries =
         ref.watch(leaderboardProvider);
@@ -437,7 +434,7 @@ class _LocalHistorySheet extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     context.l10n.leaderboardLocalHistory,
-                    style: text.titleMedium?.copyWith(color: colors.ink),
+                    style: text.titleMedium?.copyWith(color: colors.text),
                   ),
                 ),
                 if (entries.valueOrNull?.isNotEmpty ?? false)
@@ -451,11 +448,11 @@ class _LocalHistorySheet extends ConsumerWidget {
           ),
           Expanded(
             child: entries.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object error, StackTrace stack) => SketchEmptyState(
+              loading: () => const AppLoadingState(),
+              error: (Object error, StackTrace stack) => AppEmptyState(
                 message: context.l10n.errorStorage,
                 icon: Icons.error_outline,
-                action: SketchButton(
+                action: AppButton(
                   label: context.l10n.retry,
                   onPressed: () =>
                       ref.read(leaderboardProvider.notifier).refresh(),
@@ -463,7 +460,7 @@ class _LocalHistorySheet extends ConsumerWidget {
               ),
               data: (List<LeaderboardEntry> rows) {
                 if (rows.isEmpty) {
-                  return SketchEmptyState(
+                  return AppEmptyState(
                     message: context.l10n.leaderboardEmpty,
                     icon: Icons.emoji_events_outlined,
                   );
@@ -494,7 +491,7 @@ class _LocalHistorySheet extends ConsumerWidget {
                             '${entry.wins} wins',
                         trailing: Text(
                           '${entry.totalScore}',
-                          style: text.titleMedium?.copyWith(color: colors.ink),
+                          style: text.titleMedium?.copyWith(color: colors.text),
                         ),
                       ),
                     );

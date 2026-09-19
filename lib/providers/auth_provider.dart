@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scribble_guess/data/api/api_client.dart';
 import 'package:scribble_guess/data/api/auth_api.dart';
+import 'package:scribble_guess/data/api/games_api.dart';
 import 'package:scribble_guess/data/api/health_api.dart';
 import 'package:scribble_guess/models/player_profile.dart';
 import 'package:scribble_guess/providers/core_providers.dart';
@@ -63,6 +64,11 @@ final Provider<AuthApi> authApiProvider = Provider<AuthApi>(
 /// that is the socket's job, and this endpoint is on a different host.
 final Provider<HealthApi> healthApiProvider = Provider<HealthApi>(
   (Ref ref) => HealthApi(ref.watch(apiClientProvider)),
+);
+
+/// Multi-game catalogue and room endpoints share the authenticated API client.
+final Provider<GamesApi> gamesApiProvider = Provider<GamesApi>(
+  (Ref ref) => GamesApi(ref.watch(apiClientProvider)),
 );
 
 /// Keystore-backed storage for the session token.

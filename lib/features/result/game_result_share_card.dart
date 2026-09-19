@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/models/game_result.dart';
 import 'package:scribble_guess/models/player_score.dart';
 import 'package:scribble_guess/theme/theme.dart';
@@ -13,7 +13,7 @@ import 'package:scribble_guess/widgets/player_avatar.dart';
 /// It is rasterised in-process by the same `RenderRepaintBoundary` path the
 /// replay share uses, so the picture somebody shares is literally the screen
 /// they were looking at. A server-rendered card would need its own renderer,
-/// its own fonts and its own copy of the sketchbook styling — three things
+/// its own fonts and its own copy of the design system — three things
 /// that would drift from the app the moment either changed.
 ///
 /// ## What it deliberately does not carry
@@ -49,30 +49,27 @@ class GameResultShareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final PlayerScore? winner = result.winner;
 
-    return SketchCard(
+    return AppCard(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
             context.l10n.appName,
-            style: text.labelSmall?.copyWith(color: colors.inkSoft),
+            style: text.labelSmall?.copyWith(color: colors.textMuted),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             winner == null ? context.l10n.resultsFinalTitle : '${winner.name} wins!',
-            style: text.headlineSmall?.copyWith(
-              color: colors.ink,
-              fontWeight: FontWeight.w800,
-            ),
+            style: text.headlineSmall?.copyWith(color: colors.text),
           ),
           Text(
             context.l10n.resultSubtitle(result.gameMode.label, result.totalRounds),
-            style: text.bodySmall?.copyWith(color: colors.inkSoft),
+            style: text.bodySmall?.copyWith(color: colors.textMuted),
           ),
 
           const SizedBox(height: AppSpacing.lg),
@@ -89,14 +86,14 @@ class GameResultShareCard extends StatelessWidget {
           if (result.standings.length > 5)
             Text(
               '+${result.standings.length - 5} more',
-              style: text.labelSmall?.copyWith(color: colors.inkFaint),
+              style: text.labelSmall?.copyWith(color: colors.textFaint),
             ),
 
           if (!result.awards.isEmpty) ...<Widget>[
             const SizedBox(height: AppSpacing.md),
             Text(
               context.l10n.resultAwards.toUpperCase(),
-              style: text.labelSmall?.copyWith(color: colors.inkSoft),
+              style: text.labelSmall?.copyWith(color: colors.textMuted),
             ),
             const SizedBox(height: AppSpacing.sm),
             _Award(
@@ -150,7 +147,7 @@ class _StandingRow extends StatelessWidget {
   });
 
   final PlayerScore score;
-  final SketchColors colors;
+  final AppPalette colors;
   final TextTheme text;
 
   @override
@@ -162,7 +159,7 @@ class _StandingRow extends StatelessWidget {
           child: Text(
             '${score.rank}',
             style: text.labelMedium?.copyWith(
-              color: colors.inkSoft,
+              color: colors.textMuted,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -178,13 +175,13 @@ class _StandingRow extends StatelessWidget {
             score.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: text.bodyMedium?.copyWith(color: colors.ink),
+            style: text.bodyMedium?.copyWith(color: colors.text),
           ),
         ),
         Text(
           '${score.score}',
           style: text.bodyMedium?.copyWith(
-            color: colors.ink,
+            color: colors.text,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -204,7 +201,7 @@ class _Award extends StatelessWidget {
 
   final String label;
   final PlayerScore? player;
-  final SketchColors colors;
+  final AppPalette colors;
   final TextTheme text;
 
   @override
@@ -221,7 +218,7 @@ class _Award extends StatelessWidget {
             width: 92,
             child: Text(
               label,
-              style: text.labelSmall?.copyWith(color: colors.inkSoft),
+              style: text.labelSmall?.copyWith(color: colors.textMuted),
             ),
           ),
           Expanded(
@@ -230,7 +227,7 @@ class _Award extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: text.bodySmall?.copyWith(
-                color: colors.ink,
+                color: colors.text,
                 fontWeight: FontWeight.w700,
               ),
             ),

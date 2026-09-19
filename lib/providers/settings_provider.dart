@@ -6,6 +6,7 @@ import 'package:scribble_guess/models/app_settings.dart';
 import 'package:scribble_guess/models/enums.dart';
 import 'package:scribble_guess/providers/core_providers.dart';
 import 'package:scribble_guess/repositories/settings_repository.dart';
+import 'package:scribble_guess/theme/platform_design_system.dart';
 
 /// App preferences, held in memory and written through to disk on change.
 ///
@@ -32,7 +33,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
   Future<Result<void>> setReducedMotion(bool value) =>
       _write(state.copyWith(reducedMotion: value));
 
-  Future<Result<void>> setThemeMode(SketchThemeMode mode) =>
+  Future<Result<void>> setThemeMode(AppThemeMode mode) =>
       _write(state.copyWith(themeMode: mode));
 
   /// Switches the interface language.
@@ -95,13 +96,23 @@ final Provider<String> socketUrlProvider = Provider<String>((Ref ref) {
 });
 
 /// The [ThemeMode] implied by the player's choice.
+///
+/// `system` resolves to **dark** rather than to the device setting, which is
+/// a deliberate departure from what the word usually means here. This is a
+/// games platform whose five tables are all dark rooms — a card table under a
+/// lamp, a back-room bar, a ship in space — and a lobby that follows a phone
+/// into light mode and then drops the player into a black table is two
+/// products wearing one name. See `PlatformDesignSystem.defaultMode`.
+///
+/// Light is still a choice, and choosing it is still honoured. It is simply
+/// not what "I have no preference" means for this app.
 final Provider<ThemeMode> themeModeProvider = Provider<ThemeMode>((Ref ref) {
-  final SketchThemeMode mode =
+  final AppThemeMode mode =
       ref.watch(settingsProvider.select((AppSettings s) => s.themeMode));
   return switch (mode) {
-    SketchThemeMode.light => ThemeMode.light,
-    SketchThemeMode.dark => ThemeMode.dark,
-    SketchThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+    AppThemeMode.system => PlatformDesignSystem.defaultMode,
   };
 });
 

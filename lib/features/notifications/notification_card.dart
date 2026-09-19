@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/features/notifications/notification_icons.dart';
 import 'package:scribble_guess/models/app_notification.dart';
 import 'package:scribble_guess/models/social.dart';
@@ -11,11 +11,10 @@ import 'package:scribble_guess/widgets/player_avatar.dart';
 ///
 /// ## What marks a row unread
 ///
-/// A thicker ink border and a small filled dot, and nothing else. No tinted
-/// background, no shadow, no second colour — an unread row is the same card as
-/// a read one, drawn a little harder. That is the whole of the distinction the
-/// sketchbook style has room for, and it survives both themes without needing
-/// a second palette.
+/// A washed primary fill, a heavier title and a small filled dot in the
+/// notification kind own colour. No shadow and no second card shape — an
+/// unread row is the same card as a read one, tinted. That distinction reads
+/// at a glance in both themes and costs no extra palette.
 ///
 /// ## The avatar, when there is one
 ///
@@ -42,18 +41,16 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final NotificationLook look = lookFor(notification.kind);
     final UserCard? actor = notification.actor;
 
-    final Widget card = SketchCard(
+    final Widget card = AppCard(
       onTap: onTap,
-      // The unread cue: a full-ink border rather than the faint one. `selected`
-      // also thickens it, which is what makes the difference legible at a
-      // glance without a fill colour.
+      // The unread cue. `selected` washes the card in the primary and thickens
+      // its keyline, which is legible without turning the list into stripes.
       selected: !notification.isRead,
-      borderColor: notification.isRead ? colors.inkFaint : colors.ink,
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,10 +76,10 @@ class NotificationCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: text.titleSmall?.copyWith(
-                          color: colors.ink,
+                          color: colors.text,
                           fontWeight: notification.isRead
-                              ? FontWeight.w600
-                              : FontWeight.w800,
+                              ? AppTypography.semibold
+                              : AppTypography.black,
                         ),
                       ),
                     ),
@@ -92,7 +89,7 @@ class NotificationCard extends StatelessWidget {
                         notification.createdAtMs,
                         DateTime.now().millisecondsSinceEpoch,
                       ),
-                      style: text.labelSmall?.copyWith(color: colors.inkFaint),
+                      style: text.labelSmall?.copyWith(color: colors.textFaint),
                     ),
                     if (!notification.isRead) ...<Widget>[
                       const SizedBox(width: AppSpacing.sm),
@@ -105,7 +102,7 @@ class NotificationCard extends StatelessWidget {
                   notification.body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                  style: text.bodySmall?.copyWith(color: colors.textMuted),
                 ),
               ],
             ),
@@ -131,7 +128,7 @@ class _KindGlyph extends StatelessWidget {
   const _KindGlyph({required this.look, required this.colors});
 
   final NotificationLook look;
-  final SketchColors colors;
+  final AppPalette colors;
 
   @override
   Widget build(BuildContext context) {
@@ -139,9 +136,12 @@ class _KindGlyph extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: colors.paper,
+        color: colors.wash(look.tint(colors)),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        border: Border.all(color: colors.inkFaint, width: AppSpacing.border),
+        border: Border.all(
+          color: colors.washBorder(look.tint(colors)),
+          width: AppSpacing.hairline,
+        ),
       ),
       child: Icon(look.icon, size: 20, color: look.tint(colors)),
     );
@@ -168,7 +168,7 @@ class _UnreadDot extends StatelessWidget {
 class _DeleteBackground extends StatelessWidget {
   const _DeleteBackground({required this.colors});
 
-  final SketchColors colors;
+  final AppPalette colors;
 
   @override
   Widget build(BuildContext context) {
@@ -176,10 +176,10 @@ class _DeleteBackground extends StatelessWidget {
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: AppSpacing.lg),
       decoration: BoxDecoration(
-        color: colors.paperShade,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        color: colors.wash(colors.danger),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
-      child: Icon(Icons.delete_outline, color: colors.danger),
+      child: Icon(Icons.delete_outline_rounded, color: colors.danger),
     );
   }
 }

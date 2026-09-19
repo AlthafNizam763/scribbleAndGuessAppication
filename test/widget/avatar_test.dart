@@ -26,10 +26,24 @@ void main() {
       }
     });
 
-    test('gives every family the same number of faces', () {
-      final int perKind = AppConstants.avatarCount ~/ AvatarKind.values.length;
-      for (final AvatarKind kind in AvatarKind.values) {
-        expect(AvatarCatalog.of(kind), hasLength(perKind), reason: kind.name);
+    test('gives every cat its own name', () {
+      // The picker announces these to screen readers and the editor prints
+      // one under the hero, so two cats sharing a name is two cats a blind
+      // player cannot tell apart.
+      final Set<String> names =
+          AvatarCatalog.faces.map((AvatarFace f) => f.name).toSet();
+      expect(names, hasLength(AppConstants.avatarCount));
+    });
+
+    test('carries every id an old account could be holding onto a cat', () {
+      // The migration, such as it is: the previous catalogue ran to 17, and
+      // nothing rewrote those rows. Every one of them has to land on a real
+      // character rather than throwing in the middle of a room.
+      for (int legacy = 0; legacy < 18; legacy++) {
+        final AvatarFace face = AvatarCatalog.faceAt(legacy);
+        expect(face.id, inInclusiveRange(0, AppConstants.avatarCount - 1));
+        // Deterministic, so a player's face does not change between launches.
+        expect(AvatarCatalog.faceAt(legacy).id, face.id);
       }
     });
 

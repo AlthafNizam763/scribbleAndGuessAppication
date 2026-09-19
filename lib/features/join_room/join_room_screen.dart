@@ -73,13 +73,13 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
-    return SketchScaffold(
+    return AppScaffold(
       title: context.l10n.joinTitle,
       banner: const ConnectionBanner(),
-      bottom: SketchButton.primary(
+      bottom: AppButton.primary(
         label: context.l10n.joinSubmit,
         icon: Icons.login,
         busy: _joining,
@@ -92,13 +92,13 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
           Text(
             context.l10n.joinCodeLabel,
             textAlign: TextAlign.center,
-            style: text.titleMedium?.copyWith(color: colors.ink),
+            style: text.titleMedium?.copyWith(color: colors.text),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             context.l10n.joinCodeHelp,
             textAlign: TextAlign.center,
-            style: text.bodyMedium?.copyWith(color: colors.inkSoft),
+            style: text.bodyMedium?.copyWith(color: colors.textMuted),
           ),
           const SizedBox(height: AppSpacing.xl),
           TextField(
@@ -130,7 +130,7 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
               ),
             ],
             style: text.displaySmall?.copyWith(
-              color: colors.ink,
+              color: colors.text,
               letterSpacing: 8,
             ),
             decoration: InputDecoration(
@@ -141,17 +141,17 @@ class _JoinRoomScreenState extends ConsumerState<JoinRoomScreen> {
               // are localised here, where they are shown.
               errorText: _error == null ? null : context.l10n.fromEnglish(_error!),
               hintStyle: text.displaySmall?.copyWith(
-                color: colors.inkFaint,
+                color: colors.textFaint,
                 letterSpacing: 8,
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Center(
-            child: SketchButton(
+            child: AppButton(
               label: context.l10n.joinPaste,
               icon: Icons.content_paste,
-              variant: SketchButtonVariant.ghost,
+              variant: AppButtonVariant.ghost,
               onPressed: _joining ? null : _pasteCode,
             ),
           ),

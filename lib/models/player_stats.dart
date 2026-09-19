@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:scribble_guess/models/game_definition.dart';
 import 'package:scribble_guess/models/json_utils.dart';
 
 /// A player's full career record.
@@ -20,6 +21,9 @@ class PlayerCareerStats extends Equatable {
     this.gamesWon = 0,
     this.gamesLost = 0,
     this.winRate = 0,
+    this.botGamesPlayed = 0,
+    this.onlineGamesPlayed = 0,
+    this.gamesByGameId = const <GameTally>[],
     this.totalScore = 0,
     this.bestRoundScore = 0,
     this.averageScore = 0,
@@ -47,6 +51,12 @@ class PlayerCareerStats extends Equatable {
         gamesWon: asInt(json['gamesWon']),
         gamesLost: asInt(json['gamesLost']),
         winRate: asDouble(json['winRate']),
+        botGamesPlayed: asInt(json['botGamesPlayed']),
+        onlineGamesPlayed: asInt(json['onlineGamesPlayed']),
+        gamesByGameId: asList(json['gamesByGameId'])
+            .whereType<Map<dynamic, dynamic>>()
+            .map((Map<dynamic, dynamic> row) => GameTally.fromJson(asMap(row)))
+            .toList(growable: false),
         totalScore: asInt(json['totalScore']),
         bestRoundScore: asInt(json['bestRoundScore']),
         averageScore: asInt(json['averageScore']),
@@ -75,6 +85,18 @@ class PlayerCareerStats extends Equatable {
 
   /// Wins as a percentage, to one decimal place.
   final double winRate;
+
+  /// Matches finished in a room that had at least one Stupid in it.
+  final int botGamesPlayed;
+
+  /// The rest. Derived by the server, so the two always sum to [gamesPlayed].
+  final int onlineGamesPlayed;
+
+  /// Matches finished per game, most-played first, zeroes omitted.
+  ///
+  /// The one line a multi-game profile can carry that a single-game one could
+  /// not: which of the five this player actually reaches for.
+  final List<GameTally> gamesByGameId;
 
   final int totalScore;
 
@@ -146,4 +168,41 @@ class PlayerCareerStats extends Equatable {
 
   @override
   bool get stringify => true;
+}
+
+/// How many matches of one game a player has finished.
+///
+/// Carries the wire id as a string rather than a `GameId`, so a game this
+/// build has never heard of still renders with a count instead of vanishing
+/// from the breakdown. [game] resolves it where the catalogue knows it.
+class GameTally extends Equatable {
+  /// Creates a tally.
+  const GameTally({this.gameId = '', this.played = 0});
+
+  /// Builds a tally from a decoded JSON map.
+  factory GameTally.fromJson(Map<String, dynamic> json) => GameTally(
+    gameId: asString(json['gameId']),
+    played: asInt(json['played']),
+  );
+
+  /// The game's wire id, e.g. `SCRIBBLE_GUESS`.
+  final String gameId;
+
+  /// Matches finished.
+  final int played;
+
+  /// The catalogue entry, when this build has one.
+  GameDefinition? get game {
+    final GameId? id = GameId.fromWire(gameId);
+    if (id == null) return null;
+    return GameCatalog.all
+        .where((GameDefinition candidate) => candidate.gameId == id)
+        .firstOrNull;
+  }
+
+  /// What to print for this row: the game's name, or its raw id.
+  String get displayName => game?.displayName ?? gameId;
+
+  @override
+  List<Object?> get props => <Object?>[gameId, played];
 }

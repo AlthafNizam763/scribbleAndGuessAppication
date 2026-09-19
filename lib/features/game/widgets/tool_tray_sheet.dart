@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scribble_guess/core/i18n/app_text.dart';
-import 'package:scribble_guess/core/widgets/sketch_card.dart';
+import 'package:scribble_guess/core/widgets/app_button.dart';
+import 'package:scribble_guess/core/widgets/app_card.dart';
 import 'package:scribble_guess/features/game/widgets/drawing_toolbar.dart';
 import 'package:scribble_guess/models/enums.dart';
 import 'package:scribble_guess/providers/providers.dart';
@@ -121,7 +122,7 @@ class _ToolTraySheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final DrawToolState state = ref.watch(drawToolProvider);
     final DrawToolNotifier notifier = ref.read(drawToolProvider.notifier);
@@ -143,7 +144,7 @@ class _ToolTraySheet extends ConsumerWidget {
           // — the gesture bar is behind it — so the two never double up.
           bottom: media.viewInsets.bottom + media.padding.bottom + AppSpacing.lg,
         ),
-        child: SketchCard(
+        child: AppCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,14 +153,14 @@ class _ToolTraySheet extends ConsumerWidget {
 
               Text(
                 context.l10n.gameToolsTitle,
-                style: text.titleMedium?.copyWith(color: colors.ink),
+                style: text.titleMedium?.copyWith(color: colors.text),
               ),
               const SizedBox(height: AppSpacing.md),
 
               for (final (String title, List<DrawTool> tools) in _toolGroups) ...<Widget>[
                 Text(
                   title.toUpperCase(),
-                  style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                  style: text.labelSmall?.copyWith(color: colors.textMuted),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(
@@ -186,7 +187,7 @@ class _ToolTraySheet extends ConsumerWidget {
               if (state.tool == DrawTool.fill) ...<Widget>[
                 Text(
                   context.l10n.gameFillHint,
-                  style: text.bodySmall?.copyWith(color: colors.inkSoft),
+                  style: text.bodySmall?.copyWith(color: colors.textMuted),
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -195,7 +196,7 @@ class _ToolTraySheet extends ConsumerWidget {
                 Text(
                   '${context.l10n.gameBrushSize.toUpperCase()} · '
                   '${state.width.toInt()}',
-                  style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                  style: text.labelSmall?.copyWith(color: colors.textMuted),
                 ),
                 Slider(
                   value: state.width.clamp(
@@ -215,7 +216,7 @@ class _ToolTraySheet extends ConsumerWidget {
               if (state.tool.usesColor) ...<Widget>[
                 Text(
                   context.l10n.gameColors.toUpperCase(),
-                  style: text.labelSmall?.copyWith(color: colors.inkSoft),
+                  style: text.labelSmall?.copyWith(color: colors.textMuted),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _PaletteWrap(
@@ -255,7 +256,7 @@ class _DragHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Center(
       child: Padding(
@@ -264,7 +265,7 @@ class _DragHandle extends StatelessWidget {
           height: 4,
           width: 44,
           decoration: BoxDecoration(
-            color: colors.inkFaint,
+            color: colors.textFaint,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -282,7 +283,7 @@ class _PaletteWrap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
 
     return Wrap(
       spacing: AppSpacing.sm,
@@ -302,10 +303,12 @@ class _PaletteWrap extends StatelessWidget {
                   color: Color(DrawToolState.penPalette[index]),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: colors.ink,
+                    color: DrawToolState.penPalette[index] == selected
+                        ? colors.primary
+                        : colors.border,
                     width: DrawToolState.penPalette[index] == selected
-                        ? AppSpacing.border + 2
-                        : AppSpacing.border,
+                        ? AppSpacing.borderThick
+                        : AppSpacing.hairline,
                   ),
                 ),
               ),
@@ -324,7 +327,7 @@ class _PaletteWrap extends StatelessWidget {
               width: 36,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: colors.ink, width: AppSpacing.border),
+                border: Border.all(color: colors.border, width: AppSpacing.hairline),
                 gradient: const SweepGradient(
                   colors: <Color>[
                     Color(0xFFD64545),
@@ -336,7 +339,7 @@ class _PaletteWrap extends StatelessWidget {
                   ],
                 ),
               ),
-              child: Icon(Icons.add, size: 18, color: colors.canvasWhite),
+              child: Icon(Icons.add, size: 18, color: colors.canvas),
             ),
           ),
         ),
@@ -393,15 +396,15 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final bool enabled = onTap != null;
 
     final Color tint = !enabled
-        ? colors.inkFaint
+        ? colors.textFaint
         : danger
             ? colors.danger
-            : colors.ink;
+            : colors.text;
 
     return Semantics(
       button: true,
@@ -417,9 +420,9 @@ class _ActionChip extends StatelessWidget {
             vertical: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            color: colors.paper,
+            color: colors.surface,
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            border: Border.all(color: colors.inkFaint, width: AppSpacing.border),
+            border: Border.all(color: colors.border, width: AppSpacing.hairline),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -452,7 +455,7 @@ class _ToolChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Semantics(
@@ -472,23 +475,23 @@ class _ToolChip extends StatelessWidget {
             horizontal: AppSpacing.sm,
           ),
           decoration: BoxDecoration(
-            color: selected ? colors.paperShade : colors.paper,
+            color: selected ? colors.surfaceActive : colors.surface,
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             border: Border.all(
-              color: selected ? colors.ink : colors.inkFaint,
-              width: selected ? AppSpacing.border + 1 : AppSpacing.border,
+              color: selected ? colors.primary : colors.border,
+              width: selected ? AppSpacing.borderThick : AppSpacing.hairline,
             ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(DrawingToolbar.iconFor(tool), size: 22, color: colors.ink),
+              Icon(DrawingToolbar.iconFor(tool), size: 22, color: colors.text),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 tool.label,
                 textAlign: TextAlign.center,
                 style: text.labelSmall?.copyWith(
-                  color: colors.ink,
+                  color: colors.text,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                 ),
               ),
@@ -506,8 +509,8 @@ class _ToolChip extends StatelessWidget {
 ///
 /// The app has no colour-picker dependency and this needs three sliders. A
 /// package would bring a Material-styled dialog that would be the only surface
-/// in the app not drawn in the sketchbook language, for a screen a drawer
-/// opens for two seconds.
+/// in the app not drawn in the design system, for a screen a drawer opens for
+/// two seconds.
 Future<int?> showCustomColorPicker(BuildContext context, int initial) {
   return showModalBottomSheet<int>(
     context: context,
@@ -552,7 +555,7 @@ class _CustomColorSheetState extends State<_CustomColorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
     final MediaQueryData media = MediaQuery.of(context);
 
@@ -565,7 +568,7 @@ class _CustomColorSheetState extends State<_CustomColorSheet> {
           top: AppSpacing.sm,
           bottom: media.viewInsets.bottom + media.padding.bottom + AppSpacing.lg,
         ),
-        child: SketchCard(
+        child: AppCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,7 +579,7 @@ class _CustomColorSheetState extends State<_CustomColorSheet> {
                   Expanded(
                     child: Text(
                       context.l10n.gameCustomColor,
-                      style: text.titleMedium?.copyWith(color: colors.ink),
+                      style: text.titleMedium?.copyWith(color: colors.text),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -587,7 +590,7 @@ class _CustomColorSheetState extends State<_CustomColorSheet> {
                       color: _color,
                       shape: BoxShape.circle,
                       border:
-                          Border.all(color: colors.ink, width: AppSpacing.border),
+                          Border.all(color: colors.border, width: AppSpacing.hairline),
                     ),
                   ),
                 ],
@@ -616,15 +619,25 @@ class _CustomColorSheetState extends State<_CustomColorSheet> {
               Row(
                 children: <Widget>[
                   const Spacer(),
-                  TextButton(
+                  // The app's own buttons, not Material's. This sheet was the
+                  // last place in the shell still using the framework defaults,
+                  // which meant its two actions had a different height, corner
+                  // and press feel from every other pair of actions in the app.
+                  AppButton(
+                    label: context.l10n.cancel,
+                    variant: AppButtonVariant.ghost,
+                    size: AppButtonSize.compact,
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text(context.l10n.cancel),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  FilledButton(
+                  AppButton(
+                    label: context.l10n.done,
+                    variant: AppButtonVariant.primary,
+                    size: AppButtonSize.compact,
+                    // The chosen colour, worn by the button that confirms it.
+                    tone: _color,
                     onPressed: () =>
                         Navigator.of(context).pop(_color.toARGB32()),
-                    child: Text(context.l10n.done),
                   ),
                 ],
               ),
@@ -651,7 +664,7 @@ class _LabelledSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SketchColors colors = context.sketch;
+    final AppPalette colors = context.palette;
     final TextTheme text = Theme.of(context).textTheme;
 
     return Row(
@@ -660,7 +673,7 @@ class _LabelledSlider extends StatelessWidget {
           width: 76,
           child: Text(
             label,
-            style: text.labelSmall?.copyWith(color: colors.inkSoft),
+            style: text.labelSmall?.copyWith(color: colors.textMuted),
           ),
         ),
         Expanded(

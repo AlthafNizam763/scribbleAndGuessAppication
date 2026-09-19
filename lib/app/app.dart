@@ -57,7 +57,7 @@ class ScribbleGuessApp extends ConsumerWidget {
         // fixed-height chrome breaks (§59).
         final MediaQueryData media = MediaQuery.of(context);
         return TapFeedback(
-          // Every press in the sketch kit routes through here, so the click and
+          // Every press in the widget kit routes through here, so the click and
           // the bump are defined once instead of at several hundred call sites.
           onPress: () => ref.read(soundServiceProvider).play(SoundEffect.tap),
           // Above the router for the same reason the game sounds are: a room
