@@ -72,6 +72,24 @@ class GameAudio {
     if (effect != null) _service.play(effect);
   }
 
+  /// Starts this game's ambient bed, under everything else.
+  ///
+  /// Only the two games that actually have one. A loop rather than the single
+  /// sting [arrive] plays: a station that hums for four seconds and then falls
+  /// silent for the rest of the match sounds broken, and the hum is most of
+  /// what makes a corridor feel like somewhere you can be crept up on.
+  void startAmbience() {
+    final SoundEffect? bed = switch (gameId) {
+      GameId.spaceMystery => SoundEffect.spaceAmbience,
+      GameId.bluffBar => SoundEffect.bluffAmbience,
+      _ => null,
+    };
+    if (bed != null) _service.loop(bed);
+  }
+
+  /// Stops the bed. Called when the game screen goes away, however it goes.
+  void stopAmbience() => _service.stopLoop();
+
   /// A card left somebody's hand.
   void cardDrawn() => _service.play(switch (gameId) {
     GameId.kazhutha => SoundEffect.kazhuthaDraw,

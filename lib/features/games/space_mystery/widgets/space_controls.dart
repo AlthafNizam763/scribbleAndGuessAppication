@@ -191,8 +191,8 @@ class _StickPainter extends CustomPainter {
 /// taps produce an error.
 ///
 /// The elimination button is the exception: it is always *visible* to a
-/// traitor, greyed while on cooldown with the seconds on it, because knowing
-/// how long is left is most of what a traitor is planning around.
+/// saboteur, greyed while on cooldown with the seconds on it, because knowing
+/// how long is left is most of what a saboteur is planning around.
 class SpaceActions extends StatelessWidget {
   const SpaceActions({
     required this.state,
@@ -228,22 +228,22 @@ class SpaceActions extends StatelessWidget {
 
     final ShipStation? station = _stationInReach();
     final SpaceBody? body = state.bodyWithin(_interact);
-    final SpaceCrewmate? target = self.isTraitor ? state.targetWithin(_strike) : null;
+    final SpaceCrewmate? target = self.isSaboteur ? state.targetWithin(_strike) : null;
     final bool atTable =
         (self.position - map.meetingTable).distance <= 9 && self.emergenciesLeft > 0;
-    final ShipVent? vent = self.isTraitor ? _ventInReach() : null;
+    final ShipVent? vent = self.isSaboteur ? _ventInReach() : null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
-        if (self.isTraitor)
+        if (self.isSaboteur)
           _ActionButton(
             label: 'Eliminate',
             icon: Icons.bolt_rounded,
             tone: context.skin.danger,
             // Visible on cooldown, with the count, because the clock is the
-            // thing a traitor plans around.
+            // thing a saboteur plans around.
             cooldownSeconds:
                 self.killCooldownMs > 0 ? (self.killCooldownMs / 1000).ceil() : null,
             onPressed: target == null || !self.canEliminate
@@ -251,7 +251,7 @@ class SpaceActions extends StatelessWidget {
                 : () => onEliminate(target.playerId),
           ),
 
-        if (self.isTraitor && state.sabotage == null)
+        if (self.isSaboteur && state.sabotage == null)
           _ActionButton(
             label: 'Sabotage',
             icon: Icons.warning_amber_rounded,
@@ -301,8 +301,8 @@ class SpaceActions extends StatelessWidget {
 
   /// The nearest console that is on this player's own list and not yet done.
   ///
-  /// Traitors have a fake list and it works the same way, which is the point:
-  /// a traitor standing at a console looks exactly like a crewmate doing so,
+  /// Saboteurs have a fake list and it works the same way, which is the point:
+  /// a saboteur standing at a console looks exactly like a crewmate doing so,
   /// because they are doing the same thing.
   ShipStation? _stationInReach() {
     final Set<String> outstanding = <String>{
@@ -491,26 +491,51 @@ class SabotageBanner extends StatelessWidget {
         vertical: metrics.gutter * 0.45,
       ),
       decoration: BoxDecoration(
-        color: skin.danger.withValues(alpha: 0.9),
+        // A failure that can end the match and one that merely costs the crew
+        // should not shout in the same voice.
+        color: (sabotage.critical ? skin.danger : skin.accent)
+            .withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.warning_rounded, color: skin.ink, size: 16 * metrics.scale),
+          Icon(
+            sabotage.critical
+                ? Icons.warning_rounded
+                : Icons.error_outline_rounded,
+            color: skin.ink,
+            size: 16 * metrics.scale,
+          ),
           SizedBox(width: metrics.gutter * 0.4),
-          Text(
-            sabotage.kind.title,
-            style: text.labelLarge?.copyWith(
-              color: skin.ink,
-              fontFamily: skin.display,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              sabotage.kind.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.labelLarge?.copyWith(
+                color: skin.ink,
+                fontFamily: skin.display,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
-          if (sabotage.kind == SabotageKind.breach) ...<Widget>[
+
+          // The count only means something where there is something to hold.
+          // A comms jam has no console, so it gets a clock and nothing else.
+          if (sabotage.answerable) ...<Widget>[
             SizedBox(width: metrics.gutter * 0.5),
             Text(
-              '${seconds}s · ${sabotage.heldCount}/2 held',
+              '${seconds}s · ${sabotage.heldCount}/${sabotage.stations.length} held',
+              style: text.labelMedium?.copyWith(
+                color: skin.ink.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ] else ...<Widget>[
+            SizedBox(width: metrics.gutter * 0.5),
+            Text(
+              '${seconds}s',
               style: text.labelMedium?.copyWith(
                 color: skin.ink.withValues(alpha: 0.85),
                 fontWeight: FontWeight.w700,

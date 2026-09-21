@@ -79,7 +79,13 @@ class _SpaceMysteryGameScreenState
         case 'task_done':
           _audio.taskDone();
         case 'meeting':
-          _audio.meeting();
+          // A body found and an alarm pulled are not the same moment, and the
+          // station should not say them in the same voice.
+          if (event.detail == 'emergency') {
+            _audio.emergency();
+          } else {
+            _audio.meeting();
+          }
         case 'sabotage':
           _audio.sabotage();
         case 'eliminated':
@@ -87,6 +93,10 @@ class _SpaceMysteryGameScreenState
           _audio.eliminated();
         case 'vote_cast':
           _audio.voted();
+        case 'win':
+          // Whose win it is decides which sting plays, and the detail carries
+          // the winning side.
+          _audio.finished(won: _wonBy(event.detail, state));
       }
     }
   }
@@ -103,14 +113,42 @@ class _SpaceMysteryGameScreenState
     _audio.countdown();
   }
 
-  GameAudio get _audio => ref.read(gameAudioProvider(GameId.spaceMystery));
+  /// Whether the local player is on the side that just won.
+  ///
+  /// Read from the event's own detail rather than from the result document,
+  /// because the sting should land on the same frame the win does — the result
+  /// overlay arrives a beat later.
+  bool _wonBy(String winner, SpaceMysteryState state) =>
+      winner == 'saboteurs' ? state.self.isSaboteur : !state.self.isSaboteur;
+
+  /// Held rather than read through `ref` on demand.
+  ///
+  /// [dispose] has to stop the ambience, and reading a provider while the
+  /// element is being torn down is a race: the container may already have
+  /// disposed the family entry, and the bed would then play on for the rest of
+  /// the session. Resolved once, in [initState], when it certainly is alive.
+  late final GameAudio _audio = ref.read(gameAudioProvider(GameId.spaceMystery));
 
   @override
   void initState() {
     super.initState();
-    unawaited(_audio.warmUp().then((_) {
-      if (mounted) _audio.arrive();
+    final GameAudio audio = _audio;
+    unawaited(audio.warmUp().then((_) {
+      if (!mounted) return;
+      audio.arrive();
+      // The station's hum, under everything, for as long as this screen lives.
+      audio.startAmbience();
     }));
+  }
+
+  @override
+  void dispose() {
+    // However the player left — the airlock, a result screen, the back button,
+    // a router pop — the bed stops with the screen. A hum that outlives the
+    // match and follows somebody into the lobby is the kind of bug nobody
+    // reports and everybody notices.
+    _audio.stopAmbience();
+    super.dispose();
   }
 
   Future<void> _leave() async {
@@ -180,15 +218,21 @@ class _SpaceMysteryGameScreenState
         children: <Widget>[
           const GameErrorFlash(),
 
-          // The console panel, while a task is running. Above the ship,
-          // because that is the point: a player doing a task is not watching
-          // the corridor, and a traitor knows it.
-          if (self.isWorking)
-            if (map.stationOf(self.workingStationId) case final ShipStation station)
+          // The console panel, while a job is open. Above the ship, because
+          // that is the point: a player doing a job is not watching the
+          // corridor, and a saboteur knows it.
+          if (self.work case final SpaceWork work)
+            if (map.stationOf(work.stationId) case final ShipStation station)
               SpaceTaskPanel(
+                // Keyed by the console so moving to a different one rebuilds
+                // the panel's working state rather than carrying a half-turned
+                // dial across to the next job.
+                key: ValueKey<String>('console-${work.stationId}'),
                 station: station,
-                remainingMs: self.workingRemainingMs,
-                totalMs: station.durationMs,
+                work: work,
+                onSubmit: (List<num> answer) =>
+                    control.submitTask(work.stationId, answer),
+                onAbort: control.cancelTask,
               ),
 
           if (state.meeting case final SpaceMeeting meeting)
@@ -271,13 +315,13 @@ class _Hud extends StatelessWidget {
               ? GameHeadline(
                   label: !self.alive
                       ? 'You are dead — watching'
-                      : self.isTraitor
-                          ? 'Traitor'
+                      : self.isSaboteur
+                          ? 'Saboteur'
                           : 'Crew',
                   detail: self.alive
                       ? '${self.tasksDone}/${self.tasks.length} tasks'
                       : null,
-                  mine: self.isTraitor,
+                  mine: self.isSaboteur,
                 )
               : SabotageBanner(sabotage: state.sabotage!),
           actions: <Widget>[
@@ -342,7 +386,11 @@ class _Hud extends StatelessWidget {
   }
 }
 
-/// The three things a traitor can pull.
+/// The five things a saboteur can pull.
+///
+/// Split into the two that carry a deadline the crew can lose to and the three
+/// that merely cost them, because that is the only distinction a saboteur is
+/// actually choosing between.
 class _SabotageSheet extends StatelessWidget {
   const _SabotageSheet({required this.onPick});
 
@@ -375,9 +423,11 @@ class _SabotageSheet extends StatelessWidget {
                 onTap: () => onPick(kind),
                 leading: Icon(
                   switch (kind) {
-                    SabotageKind.breach => Icons.local_fire_department_rounded,
-                    SabotageKind.lights => Icons.lightbulb_outline_rounded,
+                    SabotageKind.reactor => Icons.local_fire_department_rounded,
+                    SabotageKind.oxygen => Icons.air_rounded,
+                    SabotageKind.power => Icons.lightbulb_outline_rounded,
                     SabotageKind.comms => Icons.wifi_off_rounded,
+                    SabotageKind.engine => Icons.settings_input_component_rounded,
                   },
                   color: skin.danger,
                 ),

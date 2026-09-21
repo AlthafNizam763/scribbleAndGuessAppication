@@ -135,7 +135,7 @@ class VoiceDialect {
   /// What role a `state` frame puts the local player in.
   ///
   /// Scribble's answer is about the pen. The platform's is about whether the
-  /// server is letting this player talk at all — a ghost on the Meridian, a
+  /// server is letting this player talk at all — a ghost on ORBITAL-7, a
   /// drinker who has run out of glasses — which collapses to the same two
   /// outcomes the UI has always had: in the mesh, or not.
   VoiceRole roleFrom(Map<String, dynamic> data) {

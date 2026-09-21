@@ -26,7 +26,7 @@ import 'package:scribble_guess/widgets/widgets.dart';
 /// It can say "you are in voice", "you are muted" and "the server will not let
 /// you talk right now". It cannot *grant* voice — every join is a request the
 /// server answers, and a refusal comes back with a reason the bar shows. On
-/// the Meridian that reason changes during a match: the button is off while
+/// ORBITAL-7 that reason changes during a match: the button is off while
 /// the crew is working and lights up when a meeting is called.
 class GameVoiceBar extends ConsumerStatefulWidget {
   const GameVoiceBar({this.compact = false, super.key});

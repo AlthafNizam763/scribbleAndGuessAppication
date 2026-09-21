@@ -90,6 +90,7 @@ class SpaceMeetingOverlay extends StatelessWidget {
                                 _MeetingSeat(
                                   mate: mate,
                                   player: room?.seatOf(mate.playerId),
+                                  crewKind: state.crewKindOf(mate.playerId),
                                   hasVoted: meeting.voted.contains(mate.playerId),
                                   isSelf: mate.playerId == selfId,
                                   isMyVote: meeting.yourVote == mate.playerId,
@@ -100,6 +101,7 @@ class SpaceMeetingOverlay extends StatelessWidget {
                                 _MeetingSeat(
                                   mate: mate,
                                   player: room?.seatOf(mate.playerId),
+                                  crewKind: state.crewKindOf(mate.playerId),
                                   hasVoted: false,
                                   isSelf: mate.playerId == selfId,
                                   isMyVote: false,
@@ -226,6 +228,7 @@ class _MeetingSeat extends StatelessWidget {
   const _MeetingSeat({
     required this.mate,
     required this.player,
+    required this.crewKind,
     required this.hasVoted,
     required this.isSelf,
     required this.isMyVote,
@@ -235,6 +238,11 @@ class _MeetingSeat extends StatelessWidget {
 
   final SpaceCrewmate mate;
   final PlatformSeat? player;
+
+  /// Which of the Space Crew this seat is. Cosmetic, and the thing that makes
+  /// "the medic was in Hydroponics" a sentence somebody can check.
+  final SpaceCrewKind crewKind;
+
   final bool hasVoted;
   final bool isSelf;
   final bool isMyVote;
@@ -249,7 +257,7 @@ class _MeetingSeat extends StatelessWidget {
 
     return Semantics(
       button: selectable,
-      label: '${mate.username}${mate.alive ? '' : ', dead'}',
+      label: '${mate.username}, ${crewKind.title}${mate.alive ? '' : ', dead'}',
       child: GestureDetector(
         onTap: selectable ? onTap : null,
         child: AnimatedContainer(
@@ -315,6 +323,15 @@ class _MeetingSeat extends StatelessWidget {
                   color: mate.alive ? skin.ink : skin.inkMuted,
                   fontWeight: FontWeight.w700,
                   decoration: mate.alive ? null : TextDecoration.lineThrough,
+                ),
+              ),
+              Text(
+                crewKind.title.toUpperCase(),
+                overflow: TextOverflow.ellipsis,
+                style: text.labelSmall?.copyWith(
+                  color: skin.inkMuted,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               if (player?.isBot ?? false) ...<Widget>[

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:scribble_guess/core/config/app_brand_config.dart';
 import 'package:scribble_guess/core/errors/failure.dart';
 import 'package:scribble_guess/core/utils/result.dart';
+import 'package:scribble_guess/features/games/common/game_orientation.dart';
 import 'package:scribble_guess/features/home/home_screen.dart';
 import 'package:scribble_guess/models/game_definition.dart';
 import 'package:scribble_guess/models/platform_room.dart';
@@ -66,9 +67,7 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     if (_busy) return;
 
     if (widget.game.gameId == GameId.scribbleGuess) {
-      unawaited(
-        context.pushNamed(private ? AppRoutes.createRoom : AppRoutes.joinRoom),
-      );
+      unawaited(context.pushNamed(private ? AppRoutes.createRoom : AppRoutes.joinRoom));
       return;
     }
 
@@ -113,13 +112,9 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     if (room == null || _busy) return;
 
     setState(() => _busy = true);
-    final Result<PlatformRoom> result =
-        await ref.read(gamesApiProvider).addStupids(
-              widget.game,
-              room.roomId,
-              count: count,
-              difficulty: _difficulty,
-            );
+    final Result<PlatformRoom> result = await ref
+        .read(gamesApiProvider)
+        .addStupids(widget.game, room.roomId, count: count, difficulty: _difficulty);
     if (!mounted) return;
     setState(() => _busy = false);
 
@@ -136,8 +131,9 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     if (room == null || _busy) return;
 
     setState(() => _busy = true);
-    final Result<PlatformRoom> result =
-        await ref.read(gamesApiProvider).clearStupids(widget.game, room.roomId);
+    final Result<PlatformRoom> result = await ref
+        .read(gamesApiProvider)
+        .clearStupids(widget.game, room.roomId);
     if (!mounted) return;
     setState(() => _busy = false);
 
@@ -151,8 +147,9 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     if (room == null || _busy) return;
 
     setState(() => _busy = true);
-    final Result<PlatformRoom> result =
-        await ref.read(gamesApiProvider).ready(widget.game, room.roomId);
+    final Result<PlatformRoom> result = await ref
+        .read(gamesApiProvider)
+        .ready(widget.game, room.roomId);
     if (!mounted) return;
     setState(() => _busy = false);
 
@@ -200,118 +197,127 @@ class _GameLobbyScreenState extends ConsumerState<GameLobbyScreen> {
     // caused it.
     _enterMatch();
 
-    return AppScaffold(
-      title: game.displayName,
-      padded: false,
-      child: ListView(
-        padding: pagePadding(context),
-        children: <Widget>[
-          _GameBanner(game: game),
-          const SizedBox(height: AppSpacing.xl),
+    // Space Mystery is landscape from the front door, not from the match.
+    //
+    // The brief asks for the whole flow sideways, and the lobby is the first
+    // screen of it: a player who readies up in portrait and is thrown into a
+    // landscape ship has watched the device rotate under them mid-tap. The
+    // claim is counted, so pushing the match — which takes its own — and
+    // coming back here leaves this screen's lock still standing.
+    return OrientationLock(
+      enabled: game.gameId == GameId.spaceMystery,
+      child: AppScaffold(
+        title: game.displayName,
+        padded: false,
+        child: ListView(
+          padding: pagePadding(context),
+          children: <Widget>[
+            _GameBanner(game: game),
+            const SizedBox(height: AppSpacing.xl),
 
-          if (game.gameId == GameId.scribbleGuess) ...<Widget>[
-            const QuickPlayButton(),
-            const SizedBox(height: AppSpacing.md),
-          ] else ...<Widget>[
-            AppButton(
-              label: 'PLAY ONLINE',
-              icon: Icons.public_rounded,
-              variant: AppButtonVariant.primary,
-              expand: true,
-              busy: _busy,
-              onPressed: _busy ? null : () => _open(private: false),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-
-          // PLAY WITH STUPID, where the game can actually play them.
-          //
-          // It opens a room rather than starting a match: a Stupid is seated
-          // into a room, so the host makes one and fills it from the lobby.
-          // The card below says so, because a button that silently lands
-          // somebody on a room-settings screen has not explained itself.
-          if (game.supportsBots) ...<Widget>[
-            AppButton(
-              label: 'PLAY WITH ${AppBrandConfig.current.botLabel.toUpperCase()}',
-              icon: Icons.psychology_alt_rounded,
-              expand: true,
-              onPressed: _busy ? null : () => _open(private: true),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (widget.wantsStupids)
-              _StupidsHint(botLabel: AppBrandConfig.current.botLabelPlural),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-
-          AppButton(
-            label: 'Create private room',
-            icon: Icons.lock_outline,
-            expand: true,
-            onPressed: _busy ? null : () => _open(private: true),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          if (room != null) ...<Widget>[
-            _RoomStatus(room: room, onReady: _ready, busy: _busy),
-            const SizedBox(height: AppSpacing.md),
-            _Roster(room: room),
-            const SizedBox(height: AppSpacing.md),
-            // Only once a room exists: a Stupid is seated *into* a room, so
-            // there is nothing to add one to before this point. This is where
-            // PLAY WITH STUPID actually lands.
-            if (game.supportsBots) ...<Widget>[
-              _StupidsCard(
-                room: room,
-                botLabel: AppBrandConfig.current.botLabel,
+            if (game.gameId == GameId.scribbleGuess) ...<Widget>[
+              const QuickPlayButton(),
+              const SizedBox(height: AppSpacing.md),
+            ] else ...<Widget>[
+              AppButton(
+                label: 'PLAY ONLINE',
+                icon: Icons.public_rounded,
+                variant: AppButtonVariant.primary,
+                expand: true,
                 busy: _busy,
-                difficulty: _difficulty,
-                onDifficulty: (BotDifficulty level) =>
-                    setState(() => _difficulty = level),
-                onAdd: _addStupids,
-                onClear: _clearStupids,
+                onPressed: _busy ? null : () => _open(private: false),
               ),
               const SizedBox(height: AppSpacing.md),
             ],
-            const SizedBox(height: AppSpacing.md),
-          ],
 
-          Text('Rules', style: text.titleLarge?.copyWith(color: colors.text)),
-          const SizedBox(height: AppSpacing.sm),
-          for (final String rule in game.rules)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(Icons.check_circle_outline, color: game.color, size: 20),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: Text(rule, style: text.bodyMedium)),
-                ],
+            // PLAY WITH STUPID, where the game can actually play them.
+            //
+            // It opens a room rather than starting a match: a Stupid is seated
+            // into a room, so the host makes one and fills it from the lobby.
+            // The card below says so, because a button that silently lands
+            // somebody on a room-settings screen has not explained itself.
+            if (game.supportsBots) ...<Widget>[
+              AppButton(
+                label: 'PLAY WITH ${AppBrandConfig.current.botLabel.toUpperCase()}',
+                icon: Icons.psychology_alt_rounded,
+                expand: true,
+                onPressed: _busy ? null : () => _open(private: true),
               ),
-            ),
-          const SizedBox(height: AppSpacing.lg),
-
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: <Widget>[
-              _FeatureChip(
-                icon: Icons.people_outline,
-                label: '${game.minPlayers}–${game.maxPlayers} players',
-              ),
-              if (game.supportsBots)
-                _FeatureChip(
-                  icon: Icons.psychology_alt_rounded,
-                  label: AppBrandConfig.current.botLabelPlural,
-                ),
-              if (game.supportsVoice)
-                const _FeatureChip(icon: Icons.mic_none_outlined, label: 'Voice chat'),
-              if (game.supportsTextChat)
-                const _FeatureChip(icon: Icons.chat_bubble_outline, label: 'Text chat'),
+              const SizedBox(height: AppSpacing.sm),
+              if (widget.wantsStupids)
+                _StupidsHint(botLabel: AppBrandConfig.current.botLabelPlural),
+              const SizedBox(height: AppSpacing.sm),
             ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-        ],
+
+            AppButton(
+              label: 'Create private room',
+              icon: Icons.lock_outline,
+              expand: true,
+              onPressed: _busy ? null : () => _open(private: true),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            if (room != null) ...<Widget>[
+              _RoomStatus(room: room, onReady: _ready, busy: _busy),
+              const SizedBox(height: AppSpacing.md),
+              _Roster(room: room),
+              const SizedBox(height: AppSpacing.md),
+              // Only once a room exists: a Stupid is seated *into* a room, so
+              // there is nothing to add one to before this point. This is where
+              // PLAY WITH STUPID actually lands.
+              if (game.supportsBots) ...<Widget>[
+                _StupidsCard(
+                  room: room,
+                  botLabel: AppBrandConfig.current.botLabel,
+                  busy: _busy,
+                  difficulty: _difficulty,
+                  onDifficulty: (BotDifficulty level) => setState(() => _difficulty = level),
+                  onAdd: _addStupids,
+                  onClear: _clearStupids,
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              const SizedBox(height: AppSpacing.md),
+            ],
+
+            Text('Rules', style: text.titleLarge?.copyWith(color: colors.text)),
+            const SizedBox(height: AppSpacing.sm),
+            for (final String rule in game.rules)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(Icons.check_circle_outline, color: game.color, size: 20),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(child: Text(rule, style: text.bodyMedium)),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppSpacing.lg),
+
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: <Widget>[
+                _FeatureChip(
+                  icon: Icons.people_outline,
+                  label: '${game.minPlayers}–${game.maxPlayers} players',
+                ),
+                if (game.supportsBots)
+                  _FeatureChip(
+                    icon: Icons.psychology_alt_rounded,
+                    label: AppBrandConfig.current.botLabelPlural,
+                  ),
+                if (game.supportsVoice)
+                  const _FeatureChip(icon: Icons.mic_none_outlined, label: 'Voice chat'),
+                if (game.supportsTextChat)
+                  const _FeatureChip(icon: Icons.chat_bubble_outline, label: 'Text chat'),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
       ),
     );
   }
@@ -339,10 +345,7 @@ class _Roster extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            'At the table',
-            style: text.titleSmall?.copyWith(color: colors.text),
-          ),
+          Text('At the table', style: text.titleSmall?.copyWith(color: colors.text)),
           const SizedBox(height: AppSpacing.sm),
           for (final PlatformSeat seat in room.seats)
             Padding(
@@ -366,13 +369,9 @@ class _Roster extends StatelessWidget {
                   if (seat.isBot)
                     _DifficultyTag(difficulty: seat.botDifficulty)
                   else if (seat.isReady)
-                    Icon(Icons.check_circle_rounded,
-                        color: colors.success, size: 18)
+                    Icon(Icons.check_circle_rounded, color: colors.success, size: 18)
                   else
-                    Text(
-                      'not ready',
-                      style: text.labelSmall?.copyWith(color: colors.textMuted),
-                    ),
+                    Text('not ready', style: text.labelSmall?.copyWith(color: colors.textMuted)),
                 ],
               ),
             ),
@@ -448,11 +447,7 @@ class _GameBanner extends StatelessWidget {
               color: ink.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: Icon(
-              GameGlyph.iconFor(game.gameId),
-              color: ink,
-              size: 26,
-            ),
+            child: Icon(GameGlyph.iconFor(game.gameId), color: ink, size: 26),
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
@@ -460,16 +455,11 @@ class _GameBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Text(
-                  game.displayName,
-                  style: text.headlineMedium?.copyWith(color: ink),
-                ),
+                Text(game.displayName, style: text.headlineMedium?.copyWith(color: ink)),
                 const SizedBox(height: 3),
                 Text(
                   game.description,
-                  style: text.bodyMedium?.copyWith(
-                    color: ink.withValues(alpha: 0.86),
-                  ),
+                  style: text.bodyMedium?.copyWith(color: ink.withValues(alpha: 0.86)),
                 ),
               ],
             ),
@@ -587,10 +577,7 @@ class _StupidsCard extends StatelessWidget {
           ),
           if (full) ...<Widget>[
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              'The room is full.',
-              style: text.bodySmall?.copyWith(color: colors.textMuted),
-            ),
+            Text('The room is full.', style: text.bodySmall?.copyWith(color: colors.textMuted)),
           ],
         ],
       ),
@@ -616,9 +603,7 @@ class _StupidsHint extends StatelessWidget {
         Expanded(
           child: Text(
             'Open a room, then add $botLabel from the lobby.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.textMuted,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.textMuted),
           ),
         ),
       ],
@@ -628,11 +613,7 @@ class _StupidsHint extends StatelessWidget {
 
 /// The room this screen opened, and the way to signal ready.
 class _RoomStatus extends StatelessWidget {
-  const _RoomStatus({
-    required this.room,
-    required this.onReady,
-    required this.busy,
-  });
+  const _RoomStatus({required this.room, required this.onReady, required this.busy});
 
   final PlatformRoom room;
   final VoidCallback onReady;
@@ -645,16 +626,13 @@ class _RoomStatus extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(
-            'Room ${room.roomCode}',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Room ${room.roomCode}', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppSpacing.xs),
           Text(
             '${room.playerCount} / ${room.maxPlayers} players · share this code',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.palette.textMuted,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: context.palette.textMuted),
           ),
           const SizedBox(height: AppSpacing.md),
           AppButton(
@@ -678,6 +656,5 @@ class _FeatureChip extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) =>
-      Chip(avatar: Icon(icon, size: 17), label: Text(label));
+  Widget build(BuildContext context) => Chip(avatar: Icon(icon, size: 17), label: Text(label));
 }

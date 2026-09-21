@@ -5,7 +5,7 @@ import 'package:scribble_guess/models/games/space_mystery_state.dart';
 import 'package:scribble_guess/models/json_utils.dart';
 import 'package:scribble_guess/providers/games/platform_session.dart';
 
-/// The *Meridian*, as the screen is allowed to ask for it.
+/// ORBITAL-7, as the screen is allowed to ask for it.
 ///
 /// ## Why [move] does not await anything
 ///
@@ -41,8 +41,8 @@ class SpaceMysteryController {
   /// direction the server already has is a packet that changes nothing.
   void halt() => move(0, 0);
 
-  /// Starts work at a console. The server times it and decides whether — and
-  /// when — it finished; nothing on the client can declare a task complete.
+  /// Opens a console. The server deals the job behind it and sends the puzzle
+  /// back in this player's own frame; nothing here chooses what the job is.
   Future<Result<void>> useStation(String stationId) {
     return _ref.read(platformSessionProvider.notifier).act(
       SocketEvents.clientSpaceTask,
@@ -50,7 +50,33 @@ class SpaceMysteryController {
     );
   }
 
-  /// Traitor only. Refused unless the server agrees they are close enough and
+  /// Answers the console that is open.
+  ///
+  /// [answer] is a list of numbers whose meaning belongs to the job — a
+  /// bearing, four channel levels, the nodes in the order they were touched.
+  /// The server re-derives a right answer from the puzzle **it** generated and
+  /// finishes the task only if this matches, so this call requests a
+  /// completion rather than declaring one. A refusal comes back as a
+  /// `task_failed` event on the next frame, not as an error here: the server
+  /// deliberately does not reply differently to a wrong answer than to a
+  /// right one on this path, because the frame is where every other
+  /// consequence in this game arrives too.
+  Future<Result<void>> submitTask(String stationId, List<num> answer) {
+    return _ref.read(platformSessionProvider.notifier).act(
+      SocketEvents.clientSpaceTaskSubmit,
+      <String, dynamic>{'stationId': stationId, 'answer': answer},
+    );
+  }
+
+  /// Leaves the console without finishing it.
+  ///
+  /// A real action rather than a panel that only closes: while a console is
+  /// open the server tells everybody who can see this player that they are
+  /// busy at one, and that is information the other players are using.
+  Future<Result<void>> cancelTask() =>
+      _ref.read(platformSessionProvider.notifier).act(SocketEvents.clientSpaceTaskCancel);
+
+  /// Saboteur only. Refused unless the server agrees they are close enough and
   /// off cooldown.
   Future<Result<void>> eliminate(String targetId) {
     return _ref.read(platformSessionProvider.notifier).act(
@@ -78,7 +104,7 @@ class SpaceMysteryController {
     );
   }
 
-  /// Traitor only.
+  /// Saboteur only.
   Future<Result<void>> sabotage(SabotageKind kind) {
     return _ref.read(platformSessionProvider.notifier).act(
       SocketEvents.clientSpaceSabotage,
@@ -86,7 +112,7 @@ class SpaceMysteryController {
     );
   }
 
-  /// Traitor only. Omitting [ventId] climbs out where they are.
+  /// Saboteur only. Omitting [ventId] climbs out where they are.
   Future<Result<void>> vent({String? ventId}) {
     return _ref.read(platformSessionProvider.notifier).act(
       SocketEvents.clientSpaceVent,

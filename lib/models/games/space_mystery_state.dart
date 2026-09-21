@@ -6,7 +6,7 @@ import 'package:scribble_guess/models/json_utils.dart';
 /// Which side of the airlock somebody is on.
 enum SpaceRole {
   crew('crew'),
-  traitor('traitor');
+  saboteur('saboteur');
 
   const SpaceRole(this.wire);
   final String wire;
@@ -19,11 +19,39 @@ enum SpaceRole {
   }
 }
 
-/// What the ship is doing to the crew right now.
+/// What the station is doing to the crew right now.
+///
+/// Five, in two groups. [reactor] and [oxygen] carry a deadline the crew can
+/// actually lose to, and both are answered at two consoles held at the same
+/// moment. The other three are a cost rather than a threat: they make the work
+/// harder and everybody's whereabouts less accountable, which is often the
+/// more useful thing for a saboteur to buy.
 enum SabotageKind {
-  breach('breach', 'Reactor breach', 'Hold both switches before the timer ends.'),
-  lights('lights', 'Lights out', 'You cannot see far. They can.'),
-  comms('comms', 'Comms down', 'Your task list is offline.');
+  reactor(
+    'reactor',
+    'Reactor critical',
+    'Hold both containment consoles before the core goes.',
+  ),
+  oxygen(
+    'oxygen',
+    'Oxygen failure',
+    'Purge both scrubbers before the air runs out.',
+  ),
+  power(
+    'power',
+    'Power failure',
+    'The lights are down. You cannot see far — they can.',
+  ),
+  comms(
+    'comms',
+    'Communication jam',
+    'Your job list is offline until the channel clears.',
+  ),
+  engine(
+    'engine',
+    'Engine lock',
+    'The deck plates are dragging. Everyone else is quicker than you.',
+  );
 
   const SabotageKind(this.wire, this.title, this.detail);
 
@@ -39,7 +67,65 @@ enum SabotageKind {
   }
 }
 
-/// A room on the *Meridian*, as the server described it at match start.
+/// The eight members of the Space Crew, as visual identities.
+///
+/// ## Cosmetic, and why that is the right call
+///
+/// These are **not** roles. The server decides who is crew and who is a
+/// saboteur and tells each player only what they are entitled to know; nothing
+/// here touches that. What this is for is making eight suits on a dark deck
+/// tellable apart, and giving a player something to say in a meeting other
+/// than a colour — "the medic was in Hydroponics" is a sentence, and it is one
+/// everybody at the table can check.
+///
+/// Derived from the seat order the server already sends, so every client
+/// draws the same person in the same suit for the whole match, and a player
+/// who looked away still recognises who came back through the door.
+///
+/// If a future version gives these mechanical weight, the server assigns them
+/// and this becomes a projection field. It is deliberately not one yet: a
+/// visual identity that is decided on the client cannot leak anything, and one
+/// that is decided on the server has to be thought about very carefully.
+enum SpaceCrewKind {
+  engineer('Engineer'),
+  scientist('Scientist'),
+  navigator('Navigator'),
+  mechanic('Mechanic'),
+  medic('Medic'),
+  security('Security'),
+  researcher('Researcher'),
+  technician('Technician');
+
+  const SpaceCrewKind(this.title);
+
+  /// What this crew member is called. Said out loud in meetings.
+  final String title;
+}
+
+/// Which hands-on job a console sets, and therefore which panel opens at it.
+///
+/// Fixed per station in the floor plan, so a player learns the station: the
+/// Reactor Core is always a bearing to line up. What changes every time is the
+/// puzzle, which the server deals fresh on each attempt.
+enum SpaceTaskKind {
+  align('align'),
+  sliders('sliders'),
+  sequence('sequence'),
+  match('match'),
+  rewire('rewire');
+
+  const SpaceTaskKind(this.wire);
+  final String wire;
+
+  static SpaceTaskKind? fromWire(String value) {
+    for (final SpaceTaskKind kind in values) {
+      if (kind.wire == value) return kind;
+    }
+    return null;
+  }
+}
+
+/// A module of ORBITAL-7, as the server described it at match start.
 @immutable
 class ShipRoom {
   const ShipRoom({required this.id, required this.name, required this.bounds});
@@ -57,7 +143,7 @@ class ShipRoom {
 
   final String id;
 
-  /// What a player calls it in a meeting. "I was in the reactor."
+  /// What a player calls it in a meeting. "I was in the reactor core."
   final String name;
 
   final Rect bounds;
@@ -70,6 +156,7 @@ class ShipStation {
     required this.id,
     required this.roomId,
     required this.name,
+    required this.kind,
     required this.position,
     required this.durationMs,
   });
@@ -78,6 +165,7 @@ class ShipStation {
         id: asString(json['id']),
         roomId: asString(json['roomId']),
         name: asString(json['name']),
+        kind: SpaceTaskKind.fromWire(asString(json['kind'])) ?? SpaceTaskKind.align,
         position: Offset(asDouble(json['x']), asDouble(json['y'])),
         durationMs: asInt(json['durationMs']),
       );
@@ -85,10 +173,35 @@ class ShipStation {
   final String id;
   final String roomId;
   final String name;
+
+  /// Which job this console sets. The same one every time, on purpose.
+  final SpaceTaskKind kind;
+
   final Offset position;
 
-  /// How long the server will make somebody stand there.
+  /// The shortest the server will make somebody stand here. A floor, not a
+  /// clock: the job finishes on a right answer, never on this elapsing.
   final int durationMs;
+}
+
+/// A console the crew answers a sabotage at.
+@immutable
+class ShipRepair {
+  const ShipRepair({
+    required this.id,
+    required this.roomId,
+    required this.position,
+  });
+
+  factory ShipRepair.fromJson(Map<String, dynamic> json) => ShipRepair(
+        id: asString(json['id']),
+        roomId: asString(json['roomId']),
+        position: Offset(asDouble(json['x']), asDouble(json['y'])),
+      );
+
+  final String id;
+  final String roomId;
+  final Offset position;
 }
 
 /// A vent mouth. Only ever drawn for a player entitled to use one.
@@ -121,24 +234,28 @@ class ShipVent {
 @immutable
 class ShipMap {
   const ShipMap({
+    required this.name,
     required this.world,
     required this.rooms,
     required this.corridors,
     required this.stations,
     required this.vents,
-    required this.breachStations,
+    required this.repairStations,
+    required this.sabotageStations,
     required this.meetingTable,
     required this.playerRadius,
   });
 
   static const ShipMap empty = ShipMap(
+    name: 'ORBITAL-7',
     world: Rect.fromLTWH(0, 0, 100, 60),
     rooms: <ShipRoom>[],
     corridors: <Rect>[],
     stations: <ShipStation>[],
     vents: <ShipVent>[],
-    breachStations: <Offset>[],
-    meetingTable: Offset(50, 30),
+    repairStations: <ShipRepair>[],
+    sabotageStations: <String, List<ShipRepair>>{},
+    meetingTable: Offset(52, 31),
     playerRadius: 1.2,
   );
 
@@ -146,6 +263,7 @@ class ShipMap {
     final Map<String, dynamic> world = asMap(json['world']);
 
     return ShipMap(
+      name: asString(json['shipName'], 'ORBITAL-7'),
       world: Rect.fromLTWH(
         0,
         0,
@@ -174,18 +292,28 @@ class ShipMap {
         for (final Object? row in asList(json['vents']))
           if (row is Map) ShipVent.fromJson(asMap(row)),
       ],
-      breachStations: <Offset>[
-        for (final Object? row in asList(json['breachStations']))
-          if (row is Map)
-            Offset(asDouble(asMap(row)['x']), asDouble(asMap(row)['y'])),
+      repairStations: <ShipRepair>[
+        for (final Object? row in asList(json['repairStations']))
+          if (row is Map) ShipRepair.fromJson(asMap(row)),
       ],
+      sabotageStations: <String, List<ShipRepair>>{
+        for (final MapEntry<String, dynamic> entry
+            in asMap(json['sabotageStations']).entries)
+          entry.key: <ShipRepair>[
+            for (final Object? row in asList(entry.value))
+              if (row is Map) ShipRepair.fromJson(asMap(row)),
+          ],
+      },
       meetingTable: Offset(
-        asDouble(asMap(json['meetingTable'])['x'], 50),
-        asDouble(asMap(json['meetingTable'])['y'], 30),
+        asDouble(asMap(json['meetingTable'])['x'], 52),
+        asDouble(asMap(json['meetingTable'])['y'], 31),
       ),
       playerRadius: asDouble(json['playerRadius'], 1.2),
     );
   }
+
+  /// What the station is called. Drawn on the HUD, said in the role card.
+  final String name;
 
   final Rect world;
   final List<ShipRoom> rooms;
@@ -193,11 +321,19 @@ class ShipMap {
   final List<ShipStation> stations;
   final List<ShipVent> vents;
 
-  /// The two switches a reactor breach has to be held down at, at once.
-  final List<Offset> breachStations;
+  /// Every console on the station a sabotage is answered at.
+  final List<ShipRepair> repairStations;
+
+  /// Which of those answer which sabotage, keyed by its wire name.
+  final Map<String, List<ShipRepair>> sabotageStations;
 
   final Offset meetingTable;
   final double playerRadius;
+
+  /// The consoles that clear [kind], or none for one that can only be waited
+  /// out.
+  List<ShipRepair> repairsFor(SabotageKind kind) =>
+      sabotageStations[kind.wire] ?? const <ShipRepair>[];
 
   bool get isEmpty => rooms.isEmpty;
 
@@ -264,12 +400,12 @@ class SpaceCrewmate {
   final bool alive;
   final bool venting;
 
-  /// Standing at a console. Visible to everybody, which is what lets a traitor
+  /// Standing at a console. Visible to everybody, which is what lets a saboteur
   /// fake a task and be seen doing it.
   final bool working;
 
   /// `null` unless the viewer is entitled to it: their own, their fellow
-  /// traitors', or everybody's once the match is over.
+  /// saboteurs', or everybody's once the match is over.
   final SpaceRole? role;
 }
 
@@ -301,6 +437,56 @@ class SpaceTask {
   final bool done;
 }
 
+/// The job open in front of the local player, and the puzzle it set.
+///
+/// ## Why the puzzle arrives from the server
+///
+/// Because the server is the thing that will judge the answer. It deals the
+/// job when the console is opened, sends [spec] — and only [spec] — and then
+/// re-derives what a right answer looks like from the same data when one comes
+/// back. Nothing in this class can finish a task, and there is no answer key
+/// in it to find: a panel that ran the check locally would be a panel a
+/// modified client could simply skip.
+@immutable
+class SpaceWork {
+  const SpaceWork({
+    required this.stationId,
+    required this.kind,
+    required this.spec,
+    required this.readyInMs,
+    required this.expiresInMs,
+  });
+
+  static SpaceWork? fromJson(Map<String, dynamic> json) {
+    final String stationId = asString(json['stationId']);
+    if (stationId.isEmpty) return null;
+
+    return SpaceWork(
+      stationId: stationId,
+      kind: SpaceTaskKind.fromWire(asString(json['kind'])) ?? SpaceTaskKind.align,
+      spec: asMap(json['spec']),
+      readyInMs: asInt(json['readyInMs']),
+      expiresInMs: asInt(json['expiresInMs']),
+    );
+  }
+
+  final String stationId;
+  final SpaceTaskKind kind;
+
+  /// The puzzle, as the server generated it. Read by the panel, never solved
+  /// by it — the answer goes back over the wire to be judged.
+  final Map<String, dynamic> spec;
+
+  /// What is left of the station's time floor. The ACCEPT control stays
+  /// disabled until this reaches zero, and the server refuses an early answer
+  /// anyway.
+  final int readyInMs;
+
+  final int expiresInMs;
+
+  bool get ready => readyInMs <= 0;
+}
+
 /// The local player's own card. The only place a role is ever named.
 @immutable
 class SpaceSelf {
@@ -310,8 +496,7 @@ class SpaceSelf {
     required this.alive,
     required this.position,
     required this.tasks,
-    required this.workingStationId,
-    required this.workingRemainingMs,
+    required this.work,
     required this.killCooldownMs,
     required this.ventId,
     required this.emergenciesLeft,
@@ -324,8 +509,7 @@ class SpaceSelf {
     alive: true,
     position: Offset.zero,
     tasks: <SpaceTask>[],
-    workingStationId: '',
-    workingRemainingMs: 0,
+    work: null,
     killCooldownMs: 0,
     ventId: null,
     emergenciesLeft: 0,
@@ -333,8 +517,6 @@ class SpaceSelf {
   );
 
   factory SpaceSelf.fromJson(Map<String, dynamic> json) {
-    final Map<String, dynamic> working = asMap(json['working']);
-
     return SpaceSelf(
       playerId: asString(json['playerId']),
       role: SpaceRole.fromWire(asString(json['role'])) ?? SpaceRole.crew,
@@ -344,8 +526,7 @@ class SpaceSelf {
         for (final Object? row in asList(json['tasks']))
           if (row is Map) SpaceTask.fromJson(asMap(row)),
       ],
-      workingStationId: asString(working['stationId']),
-      workingRemainingMs: asInt(working['remainingMs']),
+      work: SpaceWork.fromJson(asMap(json['working'])),
       killCooldownMs: asInt(json['killCooldownMs']),
       ventId: asString(json['ventId']).isEmpty ? null : asString(json['ventId']),
       emergenciesLeft: asInt(json['emergenciesLeft']),
@@ -359,23 +540,26 @@ class SpaceSelf {
   final Offset position;
   final List<SpaceTask> tasks;
 
-  /// The console being worked at, or empty.
-  final String workingStationId;
-  final int workingRemainingMs;
+  /// The console open in front of them, or null.
+  final SpaceWork? work;
 
-  /// Milliseconds until this traitor may act again. Always 0 for crew.
+  /// Milliseconds until this saboteur may act again. Always 0 for crew.
   final int killCooldownMs;
 
   final String? ventId;
   final int emergenciesLeft;
 
-  /// Fellow traitors. Empty for crew, always.
+  /// Fellow saboteurs. Empty for crew, always.
   final List<String> allies;
 
-  bool get isTraitor => role == SpaceRole.traitor;
-  bool get isWorking => workingStationId.isNotEmpty;
+  bool get isSaboteur => role == SpaceRole.saboteur;
+  bool get isWorking => work != null;
+
+  /// The console being worked at, or empty.
+  String get workingStationId => work?.stationId ?? '';
+
   bool get isVenting => ventId != null;
-  bool get canEliminate => isTraitor && alive && killCooldownMs <= 0;
+  bool get canEliminate => isSaboteur && alive && killCooldownMs <= 0;
 
   int get tasksDone => tasks.where((SpaceTask task) => task.done).length;
 }
@@ -467,8 +651,10 @@ class SpaceRemark {
 class SpaceSabotage {
   const SpaceSabotage({
     required this.kind,
+    required this.critical,
     required this.remainingMs,
     required this.holds,
+    required this.stations,
   });
 
   static SpaceSabotage? fromJson(Map<String, dynamic> json) {
@@ -477,22 +663,38 @@ class SpaceSabotage {
 
     return SpaceSabotage(
       kind: kind,
+      critical: asBool(json['critical']),
       remainingMs: asInt(json['remainingMs']),
       holds: <String, bool>{
         for (final MapEntry<String, dynamic> entry in asMap(json['holds']).entries)
           entry.key: asBool(entry.value),
       },
+      stations: <ShipRepair>[
+        for (final Object? row in asList(json['stations']))
+          if (row is Map) ShipRepair.fromJson(asMap(row)),
+      ],
     );
   }
 
   final SabotageKind kind;
+
+  /// Whether running this one out loses the match. The HUD shouts for these
+  /// and merely reports the rest.
+  final bool critical;
+
   final int remainingMs;
 
-  /// Which breach switches are currently held down. Never *who* is holding
-  /// them: the alarm panel shows the reactor, not a roster.
+  /// Which consoles are currently held down. Never *who* is holding them: the
+  /// alarm panel shows the station, not a roster.
   final Map<String, bool> holds;
 
+  /// Where to go and answer it. Empty for a jam, which can only be waited out.
+  final List<ShipRepair> stations;
+
   int get heldCount => holds.values.where((bool held) => held).length;
+
+  /// Whether anybody can do anything about this one at all.
+  bool get answerable => stations.isNotEmpty;
 }
 
 /// Something public that just happened.
@@ -627,6 +829,14 @@ class SpaceMysteryState {
     return index < 0 ? 0 : index;
   }
 
+  /// Which of the Space Crew this seat is, for drawing and for naming.
+  ///
+  /// Taken from seat order, which every client receives identically, so two
+  /// players describing the same person describe the same person. Purely
+  /// cosmetic — see [SpaceCrewKind].
+  SpaceCrewKind crewKindOf(String playerId) =>
+      SpaceCrewKind.values[colourIndexOf(playerId) % SpaceCrewKind.values.length];
+
   SpaceCrewmate? visibleCrewmate(String playerId) {
     for (final SpaceCrewmate mate in visible) {
       if (mate.playerId == playerId) return mate;
@@ -642,14 +852,14 @@ class SpaceMysteryState {
     return null;
   }
 
-  /// The nearest living crewmate this traitor could reach, if any.
+  /// The nearest living crewmate this saboteur could reach, if any.
   SpaceCrewmate? targetWithin(double radius) {
     SpaceCrewmate? best;
     double bestSpan = radius;
 
     for (final SpaceCrewmate mate in visible) {
       if (mate.playerId == self.playerId || !mate.alive || mate.venting) continue;
-      // Never a fellow traitor: the server refuses it, so offering it would be
+      // Never a fellow saboteur: the server refuses it, so offering it would be
       // a button that does nothing.
       if (self.allies.contains(mate.playerId)) continue;
 

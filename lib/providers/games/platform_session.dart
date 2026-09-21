@@ -189,7 +189,19 @@ class PlatformSessionNotifier extends Notifier<PlatformSession> {
   /// acted never sees a different table from the players who did not.
   Future<Result<void>> act(String event, [Map<String, dynamic> body = const <String, dynamic>{}]) async {
     final GameId? gameId = state.gameId;
-    final String matchId = state.match?.matchId ?? '';
+
+    // The same resolution movement uses, and for the same reason.
+    //
+    // This used to read `state.match?.matchId` alone, which is a dead end for
+    // a real-time game: Space Mystery's truth arrives as `space:state` frames,
+    // and there are windows — a reconnect whose subscribe ack carried no
+    // match, a first frame that beats the match broadcast — where the frame is
+    // the only thing that knows the match id. Every discrete action in the
+    // game (use a console, report, vote, call a meeting, sabotage) then failed
+    // with "No match in progress" while the player could still walk about,
+    // because movement went through `push` and took the other path. Two ways
+    // of answering one question is how that happened, so now there is one.
+    final String matchId = _matchIdForPush();
     if (gameId == null || matchId.isEmpty) {
       return const Err<void>(Failure(AppErrorCode.invalidAction, 'No match in progress.'));
     }
@@ -295,11 +307,16 @@ class PlatformSessionNotifier extends Notifier<PlatformSession> {
     await open(gameId, _roomId);
   }
 
-  /// The match id an un-acked push should carry.
+  /// The match this session is acting on, wherever the id happens to live.
   ///
-  /// Space Mystery's frames are not `PlatformMatch` envelopes — they are the
-  /// projection itself — so a session driven entirely by the tick has a match
-  /// id in the frame and nowhere else.
+  /// Three sources, most authoritative first. A turn-based game always has the
+  /// match envelope. Space Mystery's frames are not `PlatformMatch`
+  /// envelopes — they are the projection itself — so a session driven entirely
+  /// by the tick has the id in the frame and nowhere else, and a session that
+  /// has only just attached has it on the room.
+  ///
+  /// Used by both [act] and [push], deliberately: when they disagreed, half
+  /// the game worked.
   String _matchIdForPush() {
     final String fromMatch = state.match?.matchId ?? '';
     if (fromMatch.isNotEmpty) return fromMatch;

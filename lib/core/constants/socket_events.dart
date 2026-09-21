@@ -636,11 +636,26 @@ abstract final class SocketEvents {
   /// it has its own rate-limit bucket on the server.
   static const String clientSpaceMove = 'space:move';
 
-  /// Starts work at a console: `{stationId}`. The server times it and decides
-  /// when — and whether — it completed.
+  /// Opens a console: `{stationId}`. The server deals the job behind it and
+  /// sends the puzzle back in this player's own projection.
   static const String clientSpaceTask = 'space:task';
 
-  /// Traitor only: `{targetId}`. Refused unless the server agrees they are
+  /// Answers the console that is open: `{stationId, answer}`.
+  ///
+  /// [answer] is a list of numbers whose meaning depends on the job — a
+  /// bearing, four channel levels, the nodes in order. The server re-derives
+  /// what a right answer is from the puzzle **it** generated and finishes the
+  /// task only if this matches, so nothing here declares anything done.
+  static const String clientSpaceTaskSubmit = 'space:task_submit';
+
+  /// Leaves the console without finishing it: `{}`.
+  ///
+  /// A real action rather than a panel that merely closes: while a console is
+  /// open everybody who can see this player is told they are busy at one, and
+  /// that is information other people are using.
+  static const String clientSpaceTaskCancel = 'space:task_cancel';
+
+  /// Saboteur only: `{targetId}`. Refused unless the server agrees they are
   /// standing on them and off cooldown.
   static const String clientSpaceEliminate = 'space:eliminate';
 
@@ -653,10 +668,11 @@ abstract final class SocketEvents {
   /// Votes in a meeting: `{targetId}`. An empty id is a deliberate skip.
   static const String clientSpaceVote = 'space:vote';
 
-  /// Traitor only: `{kind}` — `breach`, `lights` or `comms`.
+  /// Saboteur only: `{kind}` — `reactor`, `oxygen`, `power`, `comms`
+  /// or `engine`. The first two carry a deadline the crew can lose to.
   static const String clientSpaceSabotage = 'space:sabotage';
 
-  /// Traitor only. `{ventId}` moves to another mouth on the same network;
+  /// Saboteur only. `{ventId}` moves to another mouth on the same network;
   /// omitting it climbs out where you are.
   static const String clientSpaceVent = 'space:vent';
 

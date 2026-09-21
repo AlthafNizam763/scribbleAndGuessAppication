@@ -13,7 +13,7 @@ import 'package:scribble_guess/theme/theme.dart';
 /// and the whole game proceeds from it. It covers the screen so it cannot be
 /// missed, and it waits for a deliberate tap rather than timing out — because
 /// a player whose phone was face down for three seconds must not end up
-/// walking around a ship without knowing whether they are the traitor.
+/// walking around a station without knowing whether they are the saboteur.
 ///
 /// It also means the reveal is in the player's control, which matters when
 /// somebody is playing next to somebody else.
@@ -57,8 +57,8 @@ class _RoleRevealState extends State<RoleReveal>
     final GameMetrics metrics = context.metrics;
     final TextTheme text = Theme.of(context).textTheme;
 
-    final bool traitor = widget.self.isTraitor;
-    final Color tone = traitor ? skin.danger : skin.accent;
+    final bool saboteur = widget.self.isSaboteur;
+    final Color tone = saboteur ? skin.danger : skin.accent;
 
     return Positioned.fill(
       child: GestureDetector(
@@ -94,7 +94,7 @@ class _RoleRevealState extends State<RoleReveal>
                           ],
                         ),
                         child: Icon(
-                          traitor
+                          saboteur
                               ? Icons.visibility_off_rounded
                               : Icons.handyman_rounded,
                           size: 44 * metrics.scale,
@@ -105,7 +105,7 @@ class _RoleRevealState extends State<RoleReveal>
 
                     SizedBox(height: metrics.gutter),
                     Text(
-                      traitor ? 'TRAITOR' : 'CREW',
+                      saboteur ? 'SABOTEUR' : 'CREW',
                       style: text.headlineMedium?.copyWith(
                         color: tone,
                         fontFamily: skin.display,
@@ -119,14 +119,14 @@ class _RoleRevealState extends State<RoleReveal>
                       constraints: const BoxConstraints(maxWidth: 380),
                       child: Column(
                         children: <Widget>[
-                          for (final String line in traitor
+                          for (final String line in saboteur
                               ? const <String>[
-                                  'Sabotage the ship.',
+                                  'Sabotage ORBITAL-7.',
                                   'Avoid suspicion.',
                                   'Thin out the crew.',
                                 ]
                               : const <String>[
-                                  'Finish the repairs.',
+                                  'Finish the repairs on ORBITAL-7.',
                                   'Work out who is not helping.',
                                   'Vote carefully.',
                                 ])
@@ -142,8 +142,8 @@ class _RoleRevealState extends State<RoleReveal>
                       ),
                     ),
 
-                    // The one fact a traitor is handed rather than working out.
-                    if (traitor && widget.self.allies.isNotEmpty) ...<Widget>[
+                    // The one fact a saboteur is handed rather than working out.
+                    if (saboteur && widget.self.allies.isNotEmpty) ...<Widget>[
                       SizedBox(height: metrics.gutter),
                       Container(
                         padding: EdgeInsets.symmetric(

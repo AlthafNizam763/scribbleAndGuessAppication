@@ -202,34 +202,37 @@ void main() {
         'serverMs': 1000,
         'map': <String, dynamic>{
           'world': <String, dynamic>{'width': 100, 'height': 60},
+          'shipName': 'ORBITAL-7',
           'rooms': <Map<String, dynamic>>[
             <String, dynamic>{
-              'id': 'cafeteria', 'name': 'Cafeteria',
-              'x': 38, 'y': 22, 'width': 24, 'height': 16,
+              'id': 'crew-quarters', 'name': 'Crew Quarters',
+              'x': 42, 'y': 24, 'width': 20, 'height': 14,
             },
             <String, dynamic>{
-              'id': 'reactor', 'name': 'Reactor',
-              'x': 2, 'y': 24, 'width': 16, 'height': 14,
+              'id': 'reactor-core', 'name': 'Reactor Core',
+              'x': 2, 'y': 22, 'width': 15, 'height': 14,
             },
           ],
           'corridors': <Map<String, dynamic>>[
-            <String, dynamic>{'x': 15, 'y': 28, 'width': 26, 'height': 6},
+            <String, dynamic>{'x': 14, 'y': 27, 'width': 31, 'height': 6},
           ],
           'stations': <Map<String, dynamic>>[
             <String, dynamic>{
-              'id': 'clear-trays', 'roomId': 'cafeteria', 'name': 'Clear the trays',
-              'x': 42, 'y': 26, 'durationMs': 3000,
+              'id': 'reactor-alignment', 'roomId': 'reactor-core',
+              'name': 'Reactor Alignment', 'kind': 'align',
+              'x': 13, 'y': 25, 'durationMs': 3000,
             },
           ],
           'vents': <Map<String, dynamic>>[],
-          'breachStations': <Map<String, dynamic>>[],
-          'meetingTable': <String, dynamic>{'x': 50, 'y': 30},
+          'repairStations': <Map<String, dynamic>>[],
+          'sabotageStations': <String, dynamic>{},
+          'meetingTable': <String, dynamic>{'x': 52, 'y': 31},
           'playerRadius': 1.2,
         },
         'you': <String, dynamic>{
-          'playerId': 'me', 'role': 'traitor', 'alive': true, 'x': 50, 'y': 30,
+          'playerId': 'me', 'role': 'saboteur', 'alive': true, 'x': 52, 'y': 31,
           'tasks': <Map<String, dynamic>>[
-            <String, dynamic>{'stationId': 'clear-trays', 'done': false},
+            <String, dynamic>{'stationId': 'reactor-alignment', 'done': false},
           ],
           'working': null,
           'killCooldownMs': 12000,
@@ -240,19 +243,19 @@ void main() {
         'players': <Map<String, dynamic>>[
           <String, dynamic>{
             'playerId': 'me', 'username': 'Bartholomew', 'isBot': false,
-            'x': 50, 'y': 30, 'facing': 1, 'alive': true,
-            'venting': false, 'working': false, 'role': 'traitor',
+            'x': 52, 'y': 31, 'facing': 1, 'alive': true,
+            'venting': false, 'working': false, 'role': 'saboteur',
           },
           for (int i = 0; i < 5; i++)
             <String, dynamic>{
               'playerId': 'bot-$i', 'username': 'Professor Paws', 'isBot': true,
-              'x': 44 + i * 2, 'y': 28, 'facing': -1, 'alive': i != 2,
+              'x': 45 + i * 2, 'y': 30, 'facing': -1, 'alive': i != 2,
               'venting': false, 'working': i == 0, 'role': null,
             },
         ],
         'seats': <String>['me', 'bot-0', 'bot-1', 'bot-2', 'bot-3', 'bot-4'],
         'bodies': <Map<String, dynamic>>[
-          <String, dynamic>{'playerId': 'bot-2', 'x': 46, 'y': 31},
+          <String, dynamic>{'playerId': 'bot-2', 'x': 48, 'y': 32},
         ],
         'taskProgress': 0.4,
         'taskDone': 8,
@@ -278,7 +281,7 @@ void main() {
         for (int i = 0; i < 6; i++)
           <String, dynamic>{
             'playerId': 'bot-$i',
-            'text': 'I was in the reactor the whole time, I saw nobody at all.',
+            'text': 'I was in the reactor core the whole time, I saw nobody.',
             'atMs': i,
           },
       ],

@@ -180,6 +180,12 @@ class SoundService {
   static const double _volume = 0.7;
 
   final List<AudioPlayer> _pool = <AudioPlayer>[];
+
+  /// The player the ambience bed runs on, kept out of [_pool] on purpose.
+  AudioPlayer? _ambience;
+
+  /// What is currently looping, so asking for the same bed twice is free.
+  SoundEffect? _looping;
   int _next = 0;
 
   /// Whether sounds play. Mirrors `AppSettings.soundEnabled`.
@@ -288,6 +294,51 @@ class SoundService {
     unawaited(_playAsset(effect));
   }
 
+  /// Starts [effect] looping on its own player, replacing any loop already on.
+  ///
+  /// ## Why the loop is not one of the pool
+  ///
+  /// The pool is a ring that is handed the next sound and stops whatever that
+  /// player was doing — which is right for blips and fatal for a bed. An
+  /// ambience taken from the ring would be cut off by the fourth effect after
+  /// it, every time, so it gets a player of its own that nothing else touches.
+  ///
+  /// Silently does nothing when sound is off or unavailable, like [play]: an
+  /// atmosphere is the first thing that should go and the last thing that
+  /// should ever raise.
+  void loop(SoundEffect effect) {
+    if (!soundEnabled || _broken) return;
+    if (_looping == effect) return;
+    _looping = effect;
+    unawaited(_startLoop(effect));
+  }
+
+  /// Stops whatever is looping. Safe to call when nothing is.
+  void stopLoop() {
+    _looping = null;
+    final AudioPlayer? player = _ambience;
+    if (player == null) return;
+    unawaited(player.stop().catchError((Object _) {}));
+  }
+
+  Future<void> _startLoop(SoundEffect effect) async {
+    try {
+      await warmUp();
+      // The toggle may have moved, or the loop been cancelled, while the
+      // assets were unpacking.
+      if (!_ready || !soundEnabled || _looping != effect) return;
+
+      final AudioPlayer player = _ambience ??= AudioPlayer();
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.stop();
+      // Under the effects rather than level with them: a bed that competes
+      // with the alarm is a bed that hides it.
+      await player.play(AssetSource(effect.asset), volume: _volume * 0.45);
+    } on Object catch (error) {
+      AppLogger.d('Could not loop ${effect.name}', error);
+    }
+  }
+
   Future<void> _playAsset(SoundEffect effect) async {
     try {
       await warmUp();
@@ -336,8 +387,10 @@ class SoundService {
   /// Releases every player.
   Future<void> dispose() async {
     _ready = false;
-    final List<AudioPlayer> players = <AudioPlayer>[..._pool];
+    _looping = null;
+    final List<AudioPlayer> players = <AudioPlayer>[..._pool, ?_ambience];
     _pool.clear();
+    _ambience = null;
     for (final AudioPlayer player in players) {
       try {
         await player.dispose();

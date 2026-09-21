@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:scribble_guess/features/games/common/game_orientation.dart';
 import 'package:scribble_guess/features/games/common/game_skin.dart';
 import 'package:scribble_guess/models/enums.dart';
 import 'package:scribble_guess/theme/theme.dart';
@@ -8,16 +8,16 @@ import 'package:scribble_guess/theme/theme.dart';
 ///
 /// ## Landscape is a lock, not a preference
 ///
-/// [SystemChrome.setPreferredOrientations] is applied on the way in and undone
-/// on the way out, so the rest of the app — which is portrait-shaped and has
-/// no business being sideways — is unaffected. Undoing it is in `dispose`
-/// rather than in a back handler because there are several ways off a game
-/// screen (back, a pop from the router, a result screen replacing this one)
-/// and only one of them is a button.
+/// The lock is taken on the way in and released on the way out, so the rest of
+/// the app — which is portrait-shaped and has no business being sideways — is
+/// unaffected. Releasing it happens on unmount rather than in a back handler
+/// because there are several ways off a game screen (back, a pop from the
+/// router, a result screen replacing this one) and only one of them is a
+/// button.
 ///
-/// The orientation is restored to *unrestricted* rather than to portrait: the
-/// app never locked it in the first place, and pinning it on the way out would
-/// leave a tablet unable to rotate after its first match.
+/// It is a **counted** claim rather than a flag, which matters the moment two
+/// landscape screens overlap: a lobby that pushes a match, or a match that is
+/// popped back to one. See [GameOrientation] for the bug that shape prevents.
 ///
 /// ## Why not just design for portrait and rotate
 ///
@@ -79,68 +79,49 @@ class LandscapeGameScaffold extends StatefulWidget {
 
 class _LandscapeGameScaffoldState extends State<LandscapeGameScaffold> {
   @override
-  void initState() {
-    super.initState();
-    unawaitedOrientation(<DeviceOrientation>[
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-  }
-
-  @override
-  void dispose() {
-    // Back to unrestricted, not to portrait: see the class comment.
-    unawaitedOrientation(DeviceOrientation.values);
-    super.dispose();
-  }
-
-  /// Applies an orientation preference without awaiting it.
-  ///
-  /// The future completes when the platform has acknowledged the change, which
-  /// is of no interest to either call site — and awaiting it in `dispose` is
-  /// not allowed anyway.
-  void unawaitedOrientation(List<DeviceOrientation> orientations) {
-    SystemChrome.setPreferredOrientations(orientations);
-  }
-
-  @override
   Widget build(BuildContext context) {
     final GameSkin skin = widget.skin;
 
-    return GameSkinScope(
-      skin: skin,
-      child: Scaffold(
-        backgroundColor: skin.backdrop.last,
-        body: LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final GameMetrics metrics = GameMetrics.of(constraints);
+    // The lock is a claim rather than a set-and-unset, so a result screen or a
+    // lobby stacked under this one keeps the application in landscape when
+    // this scaffold goes away. See [GameOrientation].
+    return OrientationLock(
+      child: GameSkinScope(
+        skin: skin,
+        child: Scaffold(
+          backgroundColor: skin.backdrop.last,
+          body: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final GameMetrics metrics = GameMetrics.of(constraints);
 
-            return GameMetricsScope(
-              metrics: metrics,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  // The room the table stands in. Its own layer so a table can
-                  // be translucent over it without compositing against black.
-                  _Backdrop(skin: skin),
+              return GameMetricsScope(
+                metrics: metrics,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    // The room the table stands in. Its own layer so a table
+                    // can be translucent over it without compositing against
+                    // black.
+                    _Backdrop(skin: skin),
 
-                  // The game. Inside a SafeArea because a notch on a rotated
-                  // phone sits over exactly the side of the table where a
-                  // player's own hand goes.
-                  SafeArea(child: widget.table),
+                    // The game. Inside a SafeArea because a notch on a rotated
+                    // phone sits over exactly the side of the table where a
+                    // player's own hand goes.
+                    SafeArea(child: widget.table),
 
-                  if (widget.hud != null) SafeArea(child: widget.hud!),
+                    if (widget.hud != null) SafeArea(child: widget.hud!),
 
-                  if (widget.overlay != null) widget.overlay!,
+                    if (widget.overlay != null) widget.overlay!,
 
-                  // Above everything, including a takeover: a player who has
-                  // lost the server needs to know before they try to act on
-                  // whatever the takeover is asking them.
-                  _ConnectionCurtain(status: widget.connection, skin: skin),
-                ],
-              ),
-            );
-          },
+                    // Above everything, including a takeover: a player who has
+                    // lost the server needs to know before they try to act on
+                    // whatever the takeover is asking them.
+                    _ConnectionCurtain(status: widget.connection, skin: skin),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -201,15 +182,19 @@ class _ConnectionCurtain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (String headline, String detail, bool spinning) = switch (status) {
-      ConnectionStatus.connected || ConnectionStatus.idle =>
-        ('', '', false),
+      ConnectionStatus.connected || ConnectionStatus.idle => ('', '', false),
       ConnectionStatus.connecting => ('Connecting', 'Finding the table.', true),
-      ConnectionStatus.reconnecting =>
-        ('Connection lost', 'Reconnecting — your seat is being held.', true),
-      ConnectionStatus.disconnected =>
-        ('Disconnected', 'You have left the table.', false),
-      ConnectionStatus.failed =>
-        ('Cannot reach the server', 'Check your connection and try again.', false),
+      ConnectionStatus.reconnecting => (
+        'Connection lost',
+        'Reconnecting — your seat is being held.',
+        true,
+      ),
+      ConnectionStatus.disconnected => ('Disconnected', 'You have left the table.', false),
+      ConnectionStatus.failed => (
+        'Cannot reach the server',
+        'Check your connection and try again.',
+        false,
+      ),
     };
 
     if (headline.isEmpty) return const SizedBox.shrink();
@@ -222,12 +207,7 @@ class _ConnectionCurtain extends StatelessWidget {
         child: ColoredBox(
           color: Colors.black.withValues(alpha: 0.62),
           child: Center(
-            child: _CurtainCard(
-              headline: headline,
-              detail: detail,
-              spinning: spinning,
-              skin: skin,
-            ),
+            child: _CurtainCard(headline: headline, detail: detail, spinning: spinning, skin: skin),
           ),
         ),
       ),
@@ -253,10 +233,7 @@ class _CurtainCard extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.lg,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
       constraints: const BoxConstraints(maxWidth: 360),
       decoration: BoxDecoration(
         color: skin.surface,
@@ -364,24 +341,18 @@ class GameMetrics {
 
 /// Reads the metrics the enclosing [LandscapeGameScaffold] derived.
 class GameMetricsScope extends InheritedWidget {
-  const GameMetricsScope({
-    required this.metrics,
-    required super.child,
-    super.key,
-  });
+  const GameMetricsScope({required this.metrics, required super.child, super.key});
 
   final GameMetrics metrics;
 
   static GameMetrics of(BuildContext context) {
-    final GameMetricsScope? scope =
-        context.dependOnInheritedWidgetOfExactType<GameMetricsScope>();
+    final GameMetricsScope? scope = context.dependOnInheritedWidgetOfExactType<GameMetricsScope>();
     assert(scope != null, 'No GameMetricsScope above this widget.');
     return scope!.metrics;
   }
 
   @override
-  bool updateShouldNotify(GameMetricsScope oldWidget) =>
-      oldWidget.metrics.size != metrics.size;
+  bool updateShouldNotify(GameMetricsScope oldWidget) => oldWidget.metrics.size != metrics.size;
 }
 
 /// Shorthand for reading the current metrics.

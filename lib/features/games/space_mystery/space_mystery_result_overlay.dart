@@ -53,17 +53,18 @@ class _SpaceMysteryResultOverlayState
     final TextTheme text = Theme.of(context).textTheme;
 
     final Map<String, dynamic> result = widget.state.result ?? <String, dynamic>{};
-    final bool traitorsWon = asString(result['winnerTeam']) == 'traitors';
+    final bool saboteursWon = asString(result['winnerTeam']) == 'saboteurs';
     final List<String> winners = asStringList(result['winnerIds']);
     final bool iWon = winners.contains(widget.selfId);
 
     final Map<String, dynamic> roles = asMap(result['roles']);
 
     final String reason = switch (asString(result['reason'])) {
-      'traitors_ejected' => 'Every traitor was thrown out of an airlock.',
-      'station_repaired' => 'The crew finished the repairs.',
-      'traitors_outnumber_crew' => 'The traitors took the ship.',
-      'reactor_breach' => 'The reactor went unattended.',
+      'saboteurs_ejected' => 'Every saboteur was put out of an airlock.',
+      'station_repaired' => 'The crew finished every repair on the board.',
+      'saboteurs_outnumber_crew' => 'The saboteurs took ORBITAL-7.',
+      'reactor_critical' => 'The reactor core went unattended.',
+      'oxygen_critical' => 'The air ran out with the scrubbers down.',
       _ => 'The match is over.',
     };
 
@@ -78,17 +79,17 @@ class _SpaceMysteryResultOverlayState
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   Icon(
-                    traitorsWon
+                    saboteursWon
                         ? Icons.visibility_off_rounded
                         : Icons.rocket_launch_rounded,
                     size: 40 * metrics.scale,
-                    color: traitorsWon ? skin.danger : skin.success,
+                    color: saboteursWon ? skin.danger : skin.success,
                   ),
                   SizedBox(height: metrics.gutter * 0.5),
                   Text(
-                    traitorsWon ? 'Traitors win' : 'Crew wins',
+                    saboteursWon ? 'Saboteurs win' : 'Crew wins',
                     style: text.headlineSmall?.copyWith(
-                      color: traitorsWon ? skin.danger : skin.success,
+                      color: saboteursWon ? skin.danger : skin.success,
                       fontFamily: skin.display,
                       fontWeight: FontWeight.w900,
                     ),
@@ -134,7 +135,7 @@ class _SpaceMysteryResultOverlayState
                             for (final MapEntry<String, dynamic> entry in roles.entries)
                               _RoleCard(
                                 player: widget.room?.seatOf(entry.key),
-                                isTraitor: asString(entry.value) == 'traitor',
+                                isSaboteur: asString(entry.value) == 'saboteur',
                                 isSelf: entry.key == widget.selfId,
                               ),
                           ],
@@ -166,12 +167,12 @@ class _SpaceMysteryResultOverlayState
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.player,
-    required this.isTraitor,
+    required this.isSaboteur,
     required this.isSelf,
   });
 
   final PlatformSeat? player;
-  final bool isTraitor;
+  final bool isSaboteur;
   final bool isSelf;
 
   @override
@@ -179,7 +180,7 @@ class _RoleCard extends StatelessWidget {
     final GameSkin skin = context.skin;
     final GameMetrics metrics = context.metrics;
     final TextTheme text = Theme.of(context).textTheme;
-    final Color tone = isTraitor ? skin.danger : skin.accent;
+    final Color tone = isSaboteur ? skin.danger : skin.accent;
 
     return Container(
       width: 130 * metrics.scale,
@@ -217,7 +218,7 @@ class _RoleCard extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     Text(
-                      isTraitor ? 'Traitor' : 'Crew',
+                      isSaboteur ? 'Saboteur' : 'Crew',
                       style: text.labelSmall?.copyWith(
                         color: tone,
                         fontWeight: FontWeight.w800,
